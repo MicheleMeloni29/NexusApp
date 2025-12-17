@@ -72,15 +72,30 @@
   gap: clamp(1.25rem, 3vw, 2rem);
   border-radius: 32px;
   padding: clamp(1.5rem, 4vw, 3rem);
-  background: radial-gradient(circle at top left, rgba(var(--brand-green-rgb), 0.35), rgba(var(--brand-black-rgb), 0.95));
   border: 1px solid rgba(var(--brand-white-rgb), 0.2);
-  box-shadow: 0 40px 140px rgba(var(--brand-purple-rgb), 0.25);
+  box-shadow: 0 40px 140px rgba(0, 0, 0, 0.45);
   backface-visibility: hidden;
+}
+
+.card-front {
+  background: radial-gradient(circle at top left, rgba(var(--brand-green-rgb), 0.35), rgba(var(--brand-black-rgb), 0.95));
+  box-shadow: 0 40px 140px rgba(var(--brand-green-rgb), 0.25);
+}
+
+.light .card-front {
+  background: radial-gradient(circle at top left, rgba(var(--brand-green-rgb), 0.5), rgba(255, 255, 255, 0.95));
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .card-back {
   background: radial-gradient(circle at top, rgba(var(--brand-purple-rgb), 0.3), rgba(var(--brand-black-rgb), 0.95));
+  box-shadow: 0 40px 140px rgba(var(--brand-purple-rgb), 0.25);
   transform: rotateY(180deg);
+}
+
+.light .card-back {
+  background: radial-gradient(circle at top, rgba(var(--brand-purple-rgb), 0.4), rgba(255, 255, 255, 0.95));
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 640px) {

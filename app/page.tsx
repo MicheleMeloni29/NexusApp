@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { FiSun, FiMoon } from "react-icons/fi";
 import ParticlesBackground from "./components/ParticlesBackground";
 import LoginCard from "./components/LoginCard";
+import FuzzyText from "@/components/FuzzyText";
 
 export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [isItalian, setIsItalian] = useState(true);
+  const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -15,30 +17,10 @@ export default function Home() {
     root.classList.toggle("light", !isDark);
   }, [isDark]);
 
-  const flagStyle = useMemo(() => {
-    if (isItalian) {
-      return {
-        backgroundImage:
-          "linear-gradient(90deg, #009246 0%, #009246 33%, #F4F5F0 33%, #F4F5F0 66%, #CE2B37 66%, #CE2B37 100%)",
-        backgroundSize: "100% 100%",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      };
-    }
-
-    return {
-      backgroundImage: [
-        "linear-gradient(0deg, transparent 42%, #CF142B 42%, #CF142B 58%, transparent 58%)",
-        "linear-gradient(90deg, transparent 42%, #CF142B 42%, #CF142B 58%, transparent 58%)",
-        "linear-gradient(0deg, transparent 36%, #FFFFFF 36%, #FFFFFF 64%, transparent 64%)",
-        "linear-gradient(90deg, transparent 36%, #FFFFFF 36%, #FFFFFF 64%, transparent 64%)",
-        "linear-gradient(135deg, #00247D 0%, #00247D 100%)",
-      ].join(","),
-      backgroundSize: "100% 100%",
-      backgroundPosition: "center",
-      backgroundRepeat: "no-repeat",
-    };
-  }, [isItalian]);
+  useEffect(() => {
+    const timer = setTimeout(() => setShowIntro(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const particleColors = useMemo(() => ["#8BFF00", "#FF00FF"], []);
   const backgroundHex = isDark ? "#000000" : "#FFFFFF";
@@ -70,14 +52,23 @@ export default function Home() {
           type="button"
           onClick={() => setIsItalian((prev) => !prev)}
           aria-label={isItalian ? "Passa alla lingua inglese" : "Passa alla lingua italiana"}
-          className="flex h-6 w-6 xl:h-12 xl:w-12 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-green-rgb),0.25)] bg-center text-sm font-semibold text-[var(--foreground)] transition hover:scale-105"
-          style={flagStyle}
+          className="flex h-6 w-6 xl:h-12 xl:w-12 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-green-rgb),0.25)] text-xs xl:text-sm font-semibold uppercase text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-purple)]"
         >
           {isItalian ? "IT" : "EN"}
         </button>
       </div>
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
-        <LoginCard />
+        {showIntro && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 text-center pointer-events-none">
+            <FuzzyText fontSize="clamp(2.5rem,8vw,5rem)" color="#FF00FF" baseIntensity={0.2} hoverIntensity={0.35}>
+              NEXUSAPP
+            </FuzzyText>
+            <FuzzyText fontSize="clamp(1.4rem,6vw,3.5rem)" color="#FF00FF" baseIntensity={0.14} hoverIntensity={0.24}>
+              YOUR GAME LEGACY
+            </FuzzyText>
+          </div>
+        )}
+        {!showIntro && <LoginCard />}
       </div>
     </ParticlesBackground>
   );
