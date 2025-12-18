@@ -20,6 +20,19 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Backend integration
+
+The login card now fetches the real recap data from the FastAPI backend:
+
+1. Run the backend (`uvicorn app.main:app --reload --port 8000`) and make sure at least one provider has been synced for a demo user.
+2. In the frontend create a `.env.local` file with:
+   ```
+   NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+   NEXT_PUBLIC_USER_ID=1
+   ```
+   Adjust the user id to the entry created during Steam/Riot auth.
+3. Restart `npm run dev`. After submitting the login form the app will call `/api/v1/recap?user_id=...` and feed the payload to the `VideoRecap` overlay.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

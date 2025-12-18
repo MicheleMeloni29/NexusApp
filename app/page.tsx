@@ -4,12 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { FiSun, FiMoon } from "react-icons/fi";
 import ParticlesBackground from "./components/ParticlesBackground";
 import LoginCard from "./components/LoginCard";
+import { VideoRecap } from "./components/VideoRecap";
+import type { UserStats } from "@/app/types";
 import FuzzyText from "@/components/FuzzyText";
 
 export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [isItalian, setIsItalian] = useState(true);
   const [showIntro, setShowIntro] = useState(true);
+  const [recapStats, setRecapStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -68,8 +71,9 @@ export default function Home() {
             </FuzzyText>
           </div>
         )}
-        {!showIntro && <LoginCard />}
+        {!showIntro && <LoginCard onRecapReady={setRecapStats} />}
       </div>
+      {recapStats && <VideoRecap stats={recapStats} onComplete={() => setRecapStats(null)} />}
     </ParticlesBackground>
   );
 }

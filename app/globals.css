@@ -100,7 +100,7 @@
 
 @media (max-width: 640px) {
   .card-3d-inner {
-    min-height: 600px;
+    min-height: 520px;
   }
 
   .card-face {
@@ -169,6 +169,7 @@ body::-webkit-scrollbar {
   --sidebar-ring: rgba(var(--brand-green-rgb), 0.7);
 }
 
+/*COLORI TEMA SCURO*/
 .dark {
   --background: var(--brand-black);
   --foreground: var(--brand-white);
@@ -204,8 +205,9 @@ body::-webkit-scrollbar {
   --sidebar-ring: rgba(var(--brand-green-rgb), 0.7);
 }
 
+/*COLORI TEMA CHIARO*/
 .light {
-  --background: var(--brand-white);
+  --background: #e8e9ff;
   --foreground: var(--brand-black);
   --foreground-rgb: 0, 0, 0;
   --card: rgba(var(--brand-white-rgb), 0.96);
