@@ -1,18 +1,15 @@
 "use client";
 
-import { fetchRecap } from "@/lib/api";
+import { useEffect, useState, type ChangeEvent } from "react";
+import { buildProviderLoginUrl, fetchProvidersAvailability } from "@/lib/api";
 import type { UserStats } from "@/app/types";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import type { ProvidersAvailability } from "@/lib/api";
 
 const PROVIDERS = ["steam", "riot"] as const;
 
 type Provider = (typeof PROVIDERS)[number];
 
 type ProviderCopy = {
-  idLabel: string;
-  idPlaceholder: string;
-  codeLabel: string;
-  codePlaceholder: string;
   submitLabel: string;
   helpText: string;
   statusText: string;
@@ -20,48 +17,29 @@ type ProviderCopy = {
 
 const PROVIDER_CONFIG: Record<Provider, ProviderCopy> = {
   steam: {
-    idLabel: "Steam ID or Vanity URL",
-    idPlaceholder: "es. 7656119...",
-    codeLabel: "Steam Guard code",
-    codePlaceholder: "ABCDE",
-    submitLabel: "Continua on Steam",
-    helpText: "We'll take you to steamcommunity.com to complete your secure login.",
-    statusText: "We're opening the Steam secure window...",
+    submitLabel: "Continua con Steam",
+    helpText: "Verrai reindirizzato a steamcommunity.com per completare l'accesso.",
+    statusText: "Stiamo aprendo il login di Steam...",
   },
   riot: {
-    idLabel: "Riot ID e Tagline",
-    idPlaceholder: "es. Player#EUW",
-    codeLabel: "SMS code/App Auth",
-    codePlaceholder: "123456",
-    submitLabel: "Continua on Riot",
-    helpText: "We'll take you to auth.riotgames.com to complete your secure login.",
-    statusText: "We're taking you to Riot's secure portal...",
+    submitLabel: "Continua con Riot",
+    helpText: "Verrai reindirizzato a auth.riotgames.com per completare l'accesso.",
+    statusText: "Stiamo aprendo il portale Riot...",
   },
 };
-
-type ProviderCredentials = {
-  accountId: string;
-  securityCode: string;
-};
-
-type CredentialState = Record<Provider, ProviderCredentials>;
-
-const createEmptyCredentials = (): CredentialState => ({
-  steam: { accountId: "", securityCode: "" },
-  riot: { accountId: "", securityCode: "" },
-});
 
 type LoginCardProps = {
   onRecapReady?: (stats: UserStats) => void;
 };
 
-export default function LoginCard({ onRecapReady }: LoginCardProps) {
+export default function LoginCard(_props: LoginCardProps) {
   const [isApproved, setIsApproved] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [isVisible, setIsVisible] = useState(false);
   const [provider, setProvider] = useState<Provider>("steam");
-  const [credentials, setCredentials] = useState<CredentialState>(() => createEmptyCredentials());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [providersAvailability, setProvidersAvailability] = useState<ProvidersAvailability | null>(null);
+  const [riotClientId, setRiotClientId] = useState("");
 
   useEffect(() => {
     const timeout = setTimeout(() => setIsVisible(true), 500);
@@ -70,7 +48,34 @@ export default function LoginCard({ onRecapReady }: LoginCardProps) {
 
   useEffect(() => {
     setStatusMessage("");
+    setIsSubmitting(false);
   }, [provider]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchProvidersAvailability()
+      .then((data) => {
+        if (isMounted) {
+          setProvidersAvailability(data);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          console.error("Failed to load provider availability", error);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedClientId = window.localStorage.getItem("riot_client_id");
+    if (storedClientId) {
+      setRiotClientId(storedClientId);
+    }
+  }, []);
 
   const handleApproval = () => {
     setIsApproved(true);
@@ -81,45 +86,52 @@ export default function LoginCard({ onRecapReady }: LoginCardProps) {
     setIsApproved(false);
     setStatusMessage("");
     setProvider("steam");
-    setCredentials(createEmptyCredentials());
   };
-
-  const handleFieldChange =
-    (field: keyof ProviderCredentials) => (event: ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setCredentials((prev) => ({
-        ...prev,
-        [provider]: {
-          ...prev[provider],
-          [field]: value,
-        },
-      }));
-      setStatusMessage("");
-    };
 
   const copy = PROVIDER_CONFIG[provider];
-  const isProviderComplete = (current: Provider) => {
-    const fields = credentials[current];
-    return Boolean(fields.accountId.trim()) && Boolean(fields.securityCode.trim());
-  };
-  const completedProviders = PROVIDERS.filter((item) => isProviderComplete(item));
-  const hasBothCompleted = completedProviders.length === PROVIDERS.length;
-  const isCurrentComplete = isProviderComplete(provider);
-  const submitLabel = hasBothCompleted ? "Continua su Riot e Steam" : copy.submitLabel;
+  const providerAvailability = providersAvailability?.[provider];
+  const hasManualRiotClientId = Boolean(riotClientId.trim());
+  const isProviderEnabled =
+    provider === "riot"
+      ? (providerAvailability?.enabled ?? true) || hasManualRiotClientId
+      : providerAvailability?.enabled ?? true;
+  const providerHelpText = isProviderEnabled
+    ? copy.helpText
+    : provider === "riot"
+      ? "Inserisci il Riot Client ID qui sotto o imposta RIOT_CLIENT_ID nel backend/.env."
+      : providerAvailability?.reason ?? "Accesso non disponibile finche' il provider non e' configurato.";
 
-  const handleProviderLogin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!isCurrentComplete || isSubmitting) return;
+  const handleRiotClientIdChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setRiotClientId(value);
+    if (typeof window === "undefined") return;
+    const trimmed = value.trim();
+    if (trimmed) {
+      window.localStorage.setItem("riot_client_id", trimmed);
+    } else {
+      window.localStorage.removeItem("riot_client_id");
+    }
+  };
+
+  const handleProviderLogin = () => {
+    if (isSubmitting || !isProviderEnabled) {
+      if (!isProviderEnabled) {
+        setStatusMessage(providerAvailability?.reason ?? "Inserisci il Riot Client ID per continuare.");
+      }
+      return;
+    }
     setIsSubmitting(true);
-    setStatusMessage("Stiamo recuperando il tuo recap personalizzato...");
+    setStatusMessage(copy.statusText);
+
     try {
-      const stats = await fetchRecap();
-      onRecapReady?.(stats);
-      setStatusMessage("Recap generato! Preparati al video...");
+      const nextUrl = `${window.location.origin}/accesso`;
+      const options =
+        provider === "riot" && riotClientId.trim() ? { clientId: riotClientId.trim() } : undefined;
+      const redirectUrl = buildProviderLoginUrl(provider, nextUrl, options);
+      window.location.href = redirectUrl;
     } catch (error) {
-      console.error("Failed to fetch recap", error);
-      setStatusMessage("Impossibile recuperare il recap. Riprova tra poco.");
-    } finally {
+      console.error("Failed to start provider login", error);
+      setStatusMessage("Impossibile avviare il login. Riprova.");
       setIsSubmitting(false);
     }
   };
@@ -192,51 +204,43 @@ export default function LoginCard({ onRecapReady }: LoginCardProps) {
                 ))}
               </div>
             </div>
-            <form onSubmit={handleProviderLogin} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="accountId" className="text-sm font-medium text-[var(--foreground)]">
-                  {copy.idLabel}
-                </label>
-                <input
-                  id="accountId"
-                  name="accountId"
-                  required
-                  value={credentials[provider].accountId}
-                  onChange={handleFieldChange("accountId")}
-                  placeholder={copy.idPlaceholder}
-                  className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="securityCode" className="text-sm font-medium text-[var(--foreground)]">
-                  {copy.codeLabel}
-                </label>
-                <input
-                  id="securityCode"
-                  name="securityCode"
-                  placeholder={copy.codePlaceholder}
-                  required
-                  value={credentials[provider].securityCode}
-                  onChange={handleFieldChange("securityCode")}
-                  className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
-                />
-              </div>
+            <div className="space-y-4">
+              <p className="text-center text-sm text-[rgba(var(--foreground-rgb),0.75)]">{providerHelpText}</p>
+              {provider === "riot" && (
+                <div className="space-y-2">
+                  <label htmlFor="riotClientId" className="text-sm font-medium text-[var(--foreground)]">
+                    Riot Client ID
+                  </label>
+                  <input
+                    id="riotClientId"
+                    name="riotClientId"
+                    value={riotClientId}
+                    onChange={handleRiotClientIdChange}
+                    placeholder="Inserisci il Riot Client ID"
+                    className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
+                  />
+                  <p className="text-xs text-[rgba(var(--foreground-rgb),0.6)]">
+                    Il valore viene salvato localmente nel browser.
+                  </p>
+                </div>
+              )}
               <button
-                type="submit"
-                disabled={!isCurrentComplete || isSubmitting}
+                type="button"
+                onClick={handleProviderLogin}
+                disabled={isSubmitting || !isProviderEnabled}
                 className="w-full rounded-2xl bg-[var(--brand-purple)] px-6 py-3 text-base font-semibold text-[var(--brand-black)] transition hover:-translate-y-0.5 hover:opacity-90 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {isSubmitting ? "Generazione in corso..." : submitLabel}
+                {isSubmitting ? "Reindirizzamento in corso..." : copy.submitLabel}
               </button>
               {statusMessage ? (
                 <p className="text-center text-xs text-[var(--brand-green)]">{statusMessage}</p>
-              ) : (
+              ) : isProviderEnabled ? (
                 <p className="text-center text-xs text-[rgba(var(--foreground-rgb),0.6)]">
-                  {copy.helpText}
+                  Dopo l'accesso verrai riportato qui per completare la connessione.
                 </p>
-              )}
-            </form>
-            <div className="pt-1 pb-0">
+              ) : null}
+            </div>
+            <div className="">
               <button
                 type="button"
                 onClick={handleBack}

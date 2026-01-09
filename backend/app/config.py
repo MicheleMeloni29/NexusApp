@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
   steam_api_key: Optional[str] = None
   steam_return_url: str = "http://localhost:8000/api/v1/auth/steam/callback"
-  steam_realm: str = "http://localhost:3000"
+  steam_realm: str = "http://localhost:8000"
 
   riot_client_id: Optional[str] = None
   riot_client_secret: Optional[str] = None

@@ -207,7 +207,7 @@ body::-webkit-scrollbar {
 
 /*COLORI TEMA CHIARO*/
 .light {
-  --background: #e8e9ff;
+  --background: #e8e9ffed;
   --foreground: var(--brand-black);
   --foreground-rgb: 0, 0, 0;
   --card: rgba(var(--brand-white-rgb), 0.96);

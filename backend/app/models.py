@@ -18,6 +18,7 @@ class AuthState(SQLModel, table=True):
   value: str = Field(unique=True, index=True)
   created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
   user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+  data: Optional[dict] = Field(default=None, sa_column=Column(JSON))
 
 
 class RiotToken(SQLModel, table=True):

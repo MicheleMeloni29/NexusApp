@@ -5,6 +5,17 @@ const DEFAULT_USER_ID = Number(process.env.NEXT_PUBLIC_USER_ID ?? "1");
 
 type Provider = "steam" | "riot";
 
+type ProviderLoginOptions = {
+  clientId?: string;
+};
+
+export type ProviderAvailability = {
+  enabled: boolean;
+  reason?: string;
+};
+
+export type ProvidersAvailability = Record<Provider, ProviderAvailability>;
+
 function buildUrl(path: string) {
   return `${API_BASE_URL.replace(/\/$/, "")}${path}`;
 }
@@ -41,4 +52,20 @@ export async function syncProvider(provider: Provider, userId: number = DEFAULT_
     method: "POST",
   });
   return handleResponse(response);
+}
+
+export async function fetchProvidersAvailability(): Promise<ProvidersAvailability> {
+  const response = await fetch(buildUrl("/auth/providers"), { cache: "no-store" });
+  return handleResponse<ProvidersAvailability>(response);
+}
+
+export function buildProviderLoginUrl(provider: Provider, nextUrl?: string, options?: ProviderLoginOptions) {
+  const url = new URL(buildUrl(`/auth/${provider}/start`));
+  if (nextUrl) {
+    url.searchParams.set("next", nextUrl);
+  }
+  if (options?.clientId) {
+    url.searchParams.set("client_id", options.clientId);
+  }
+  return url.toString();
 }

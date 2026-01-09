@@ -1,9 +1,12 @@
+import base64
+import hashlib
 from datetime import datetime, timedelta
 from secrets import token_urlsafe
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 
 from ..config import get_settings
@@ -16,8 +19,33 @@ STEAM_OPENID_ENDPOINT = "https://steamcommunity.com/openid/login"
 RIOT_AUTH_BASE = "https://auth.riotgames.com"
 
 
-def _persist_state(session: Session, provider: str, value: str, user: User | None = None) -> None:
-  state = AuthState(provider=provider, value=value, user_id=user.id if user else None)
+def _provider_availability() -> dict:
+  riot_enabled = bool(settings.riot_client_id)
+  riot_reason = None
+  if not riot_enabled:
+    riot_reason = "Riot non configurato. Imposta RIOT_CLIENT_ID nel backend/.env."
+  payload = {
+    "steam": {"enabled": True},
+    "riot": {"enabled": riot_enabled},
+  }
+  if riot_reason:
+    payload["riot"]["reason"] = riot_reason
+  return payload
+
+
+@router.get("/providers")
+async def auth_providers():
+  return _provider_availability()
+
+
+def _persist_state(
+  session: Session,
+  provider: str,
+  value: str,
+  user: User | None = None,
+  data: dict | None = None,
+) -> None:
+  state = AuthState(provider=provider, value=value, user_id=user.id if user else None, data=data)
   session.add(state)
   session.commit()
 
@@ -33,6 +61,32 @@ def _consume_state(session: Session, provider: str, value: str) -> AuthState:
 
 def _extract_steam_id(claimed_id: str) -> str:
   return claimed_id.rsplit("/", 1)[-1]
+
+
+def _normalize_next_url(next_url: str | None) -> str:
+  default_next = f"{settings.frontend_origin.rstrip('/')}/accesso"
+  if not next_url:
+    return default_next
+
+  parsed = urlparse(next_url)
+  if not parsed.netloc:
+    next_url = f"{settings.frontend_origin.rstrip('/')}/{next_url.lstrip('/')}"
+    parsed = urlparse(next_url)
+
+  frontend = urlparse(settings.frontend_origin)
+  if parsed.scheme not in ("http", "https") or parsed.netloc != frontend.netloc:
+    return default_next
+
+  return next_url
+
+
+def _build_frontend_redirect(next_url: str | None, provider: str, user_id: int) -> str:
+  base_url = _normalize_next_url(next_url)
+  parsed = urlparse(base_url)
+  query = parse_qs(parsed.query)
+  query["provider"] = [provider]
+  query["user_id"] = [str(user_id)]
+  return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
 
 
 async def _verify_steam_response(params: dict) -> bool:
@@ -60,10 +114,19 @@ def _upsert_steam_user(session: Session, steam_id: str) -> User:
   return user
 
 
+def _generate_code_verifier() -> str:
+  return token_urlsafe(64)
+
+
+def _build_code_challenge(code_verifier: str) -> str:
+  digest = hashlib.sha256(code_verifier.encode("ascii")).digest()
+  return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
 @router.get("/steam/start")
-async def start_steam_login(session: Session = Depends(session_dependency)):
+async def start_steam_login(next: str | None = None, session: Session = Depends(session_dependency)):
   state = token_urlsafe(32)
-  _persist_state(session, "steam", state)
+  _persist_state(session, "steam", state, data={"next": _normalize_next_url(next)})
 
   return_to = f"{settings.steam_return_url}?state={state}"
   query = {
@@ -75,7 +138,7 @@ async def start_steam_login(session: Session = Depends(session_dependency)):
     "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
   }
   url = f"{STEAM_OPENID_ENDPOINT}?{urlencode(query)}"
-  return {"redirect": url, "state": state}
+  return RedirectResponse(url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 
 @router.get("/steam/callback")
@@ -88,34 +151,47 @@ async def steam_callback(request: Request, state: str, session: Session = Depend
   if not claimed_id:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing claimed_id")
 
-  _consume_state(session, "steam", state)
+  state_record = _consume_state(session, "steam", state)
   steam_id = _extract_steam_id(claimed_id)
   user = _upsert_steam_user(session, steam_id)
-  return {"user_id": user.id, "steam_id": steam_id}
+  redirect_url = _build_frontend_redirect(
+    (state_record.data or {}).get("next"),
+    "steam",
+    user.id,
+  )
+  return RedirectResponse(redirect_url, status_code=status.HTTP_302_FOUND)
 
 
-def _riot_authorize_url(state: str) -> str:
-  if not settings.riot_client_id:
+def _riot_authorize_url(client_id: str, state: str, code_challenge: str) -> str:
+  if not client_id:
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Riot client ID not configured")
   params = {
-    "client_id": settings.riot_client_id,
+    "client_id": client_id,
     "redirect_uri": settings.riot_redirect_uri,
     "response_type": "code",
     "scope": settings.riot_scope,
     "state": state,
+    "code_challenge": code_challenge,
+    "code_challenge_method": "S256",
   }
   return f"{RIOT_AUTH_BASE}/authorize?{urlencode(params)}"
 
 
-async def _exchange_riot_code(code: str) -> dict:
-  if not settings.riot_client_id or not settings.riot_client_secret:
-    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Riot OAuth not configured")
+async def _exchange_riot_code(code: str, code_verifier: str, client_id: str, client_secret: str | None) -> dict:
+  if not client_id:
+    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Riot client ID not configured")
   data = {
     "grant_type": "authorization_code",
     "code": code,
     "redirect_uri": settings.riot_redirect_uri,
+    "code_verifier": code_verifier,
   }
-  auth = (settings.riot_client_id, settings.riot_client_secret)
+  auth = None
+  if client_secret:
+    auth = (client_id, client_secret)
+  else:
+    data["client_id"] = client_id
+
   async with httpx.AsyncClient() as client:
     response = await client.post(f"{RIOT_AUTH_BASE}/token", data=data, auth=auth)
     if response.status_code >= 400:
@@ -170,10 +246,29 @@ def _store_riot_tokens(session: Session, user: User, token_payload: dict) -> Rio
 
 
 @router.get("/riot/start")
-async def start_riot_login(session: Session = Depends(session_dependency)):
+async def start_riot_login(
+  next: str | None = None,
+  client_id: str | None = None,
+  session: Session = Depends(session_dependency),
+):
+  resolved_client_id = (client_id or settings.riot_client_id or "").strip()
+  if not resolved_client_id:
+    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Riot client ID not configured")
   state = token_urlsafe(32)
-  _persist_state(session, "riot", state)
-  return {"redirect": _riot_authorize_url(state), "state": state}
+  code_verifier = _generate_code_verifier()
+  code_challenge = _build_code_challenge(code_verifier)
+  _persist_state(
+    session,
+    "riot",
+    state,
+    data={
+      "next": _normalize_next_url(next),
+      "code_verifier": code_verifier,
+      "client_id": resolved_client_id,
+    },
+  )
+  url = _riot_authorize_url(resolved_client_id, state, code_challenge)
+  return RedirectResponse(url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 
 @router.get("/riot/callback")
@@ -183,12 +278,21 @@ async def riot_callback(code: str | None = None, state: str | None = None, sessi
   if not state:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing state")
 
-  _consume_state(session, "riot", state)
-  token_payload = await _exchange_riot_code(code)
+  state_record = _consume_state(session, "riot", state)
+  state_data = state_record.data or {}
+  code_verifier = state_data.get("code_verifier")
+  if not code_verifier:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing PKCE verifier")
+
+  client_id = state_data.get("client_id") or settings.riot_client_id
+  if not client_id:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Riot client ID not configured")
+  token_payload = await _exchange_riot_code(code, code_verifier, client_id, settings.riot_client_secret)
   profile = await _fetch_riot_profile(token_payload["access_token"])
   puuid = profile.get("puuid")
   if not puuid:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Riot profile missing PUUID")
   user = _upsert_riot_user(session, puuid)
   _store_riot_tokens(session, user, token_payload)
-  return {"user_id": user.id, "riot": {"puuid": puuid}}
+  redirect_url = _build_frontend_redirect(state_data.get("next"), "riot", user.id)
+  return RedirectResponse(redirect_url, status_code=status.HTTP_302_FOUND)
