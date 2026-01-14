@@ -16,7 +16,7 @@ from ..models import AuthState, RiotToken, User
 router = APIRouter()
 settings = get_settings()
 STEAM_OPENID_ENDPOINT = "https://steamcommunity.com/openid/login"
-RIOT_AUTH_BASE = "https://auth.riotgames.com"
+RIOT_AUTH_BASE = settings.riot_auth_base.rstrip("/")
 
 
 def _provider_availability() -> dict:

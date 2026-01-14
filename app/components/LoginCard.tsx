@@ -148,21 +148,21 @@ export default function LoginCard(_props: LoginCardProps) {
             <span className="text-base xl:text-xl font-bold uppercase tracking-[0.35em] text-[rgba(var(--brand-green-rgb),0.85)]">
               LINK YOUR ACCOUNTS
             </span>
-            <p className="mt-6 text-sm text-[rgba(var(--foreground-rgb),0.75)]">
+            <p className="mt-6 text-md text-[rgba(var(--foreground-rgb),0.75)]">
               Connect your accounts. Watch your year in review. Generate your eternal card.
             </p>
           </div>
           <ul className="mt-8 xl:mt-4 flex-1 space-y-6 xl:space-y-12 text-sm text-[rgba(var(--foreground-rgb),0.75)]">
             <li className="flex gap-3 xl:gap-5">
-              <span className="mt-2 h-2 w-2 rounded-full bg-[var(--brand-green)]" />
+              <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[var(--brand-green)]" />
               Steam sync: library, playtime history and most played titles.
             </li>
             <li className="flex gap-3 xl:gap-5">
-              <span className="mt-2 h-2 w-2 rounded-full bg-[var(--brand-green)]" />
+              <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[var(--brand-green)]" />
               Riot sync: competitive rank, agents and recent match insights.
             </li>
             <li className="flex gap-3 xl:gap-5">
-              <span className="mt-2 h-2 w-2 rounded-full bg-[var(--brand-green)]" />
+              <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[var(--brand-green)]" />
               You can unlink any account at any time from your security panel.
             </li>
           </ul>

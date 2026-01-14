@@ -41,6 +41,7 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
     }, [currentSceneIndex, onComplete]);
 
     const progress = ((currentSceneIndex + 1) / scenes.length) * 100;
+    const topGame = stats.topGame ?? 'Unknown';
 
     return (
         <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center overflow-hidden">
@@ -91,7 +92,7 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
                         <Gamepad className="w-24 h-24 text-purple-500 mx-auto mb-8" />
                         <h2 className="text-gray-400 text-xl font-mono mb-4 uppercase tracking-widest">Most Played Game</h2>
                         <h1 className="text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
-                            {stats.topGame.toUpperCase()}
+                            {topGame.toUpperCase()}
                         </h1>
                         <div className="inline-block bg-purple-500/20 px-8 py-3 rounded-full border border-purple-500/50">
                             <p className="text-purple-400 font-bold text-xl">{Math.floor(stats.totalHours * 0.7)} HOURS LOGGED</p>

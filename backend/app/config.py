@@ -22,6 +22,7 @@ class Settings(BaseSettings):
   riot_client_id: Optional[str] = None
   riot_client_secret: Optional[str] = None
   riot_redirect_uri: str = "http://localhost:8000/api/v1/auth/riot/callback"
+  riot_auth_base: str = "https://auth.riotgames.com"
   riot_scope: str = "openid offline_access"
   riot_region: str = "eu"
   riot_api_key: Optional[str] = None
