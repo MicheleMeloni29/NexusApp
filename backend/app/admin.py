@@ -6,8 +6,8 @@ from .models import RiotStats, RiotToken, SteamStats, User
 
 
 class UserAdmin(ModelView, model=User):
-  column_list = [User.id, User.steam_id, User.riot_puuid, User.created_at]
-  column_searchable_list = [User.steam_id, User.riot_puuid]
+  column_list = [User.id, User.email, User.email_verified, User.steam_id, User.riot_puuid, User.created_at]
+  column_searchable_list = [User.email, User.steam_id, User.riot_puuid]
   column_sortable_list = [User.id, User.created_at]
   name = "User"
   name_plural = "Users"

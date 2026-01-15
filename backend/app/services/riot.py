@@ -126,9 +126,29 @@ def _upsert_stats(session: Session, user: User, summary: Dict[str, Any]) -> Riot
   return stats
 
 
+def _build_mock_summary(puuid: str) -> Dict[str, Any]:
+  return {
+    "league": {
+      "rank": "GOLD IV",
+      "tier": "GOLD",
+      "wins": 42,
+      "losses": 30,
+    },
+    "matches": {
+      "favorite_champion": "Ahri",
+      "matches": 5,
+      "win_rate": 58.33,
+    },
+    "match_ids": [f"DEV_MATCH_{index + 1}_{puuid[:6]}" for index in range(5)],
+  }
+
+
 async def sync_user(session: Session, user: User) -> RiotStats:
   if not user.riot_puuid:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User missing Riot PUUID")
+  if settings.riot_dev_mock_stats:
+    summary = _build_mock_summary(user.riot_puuid)
+    return _upsert_stats(session, user, summary)
   token = session.exec(select(RiotToken).where(RiotToken.user_id == user.id)).first()
   if not token:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has not authorized Riot access")

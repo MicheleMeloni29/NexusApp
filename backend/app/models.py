@@ -7,6 +7,12 @@ from sqlmodel import Field, SQLModel
 
 class User(SQLModel, table=True):
   id: Optional[int] = Field(default=None, primary_key=True)
+  email: Optional[str] = Field(default=None, index=True, unique=True)
+  password_hash: Optional[str] = None
+  password_salt: Optional[str] = None
+  email_verified: bool = Field(default=False)
+  email_verification_token: Optional[str] = None
+  email_verification_sent_at: Optional[datetime] = None
   steam_id: Optional[str] = Field(default=None, index=True, unique=True)
   riot_puuid: Optional[str] = Field(default=None, index=True, unique=True)
   created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -29,6 +35,14 @@ class RiotToken(SQLModel, table=True):
   expires_at: datetime
   scope: Optional[str] = None
   updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
+class AuthSession(SQLModel, table=True):
+  id: Optional[int] = Field(default=None, primary_key=True)
+  user_id: int = Field(foreign_key="user.id", index=True)
+  token: str = Field(unique=True, index=True)
+  expires_at: datetime
+  created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
 class SteamStats(SQLModel, table=True):

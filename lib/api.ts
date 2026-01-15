@@ -9,6 +9,16 @@ type ProviderLoginOptions = {
   clientId?: string;
 };
 
+export type AuthUser = {
+  user_id: number;
+  email: string | null;
+  email_verified?: boolean;
+  steam_connected: boolean;
+  riot_connected: boolean;
+  steam_id?: string | null;
+  riot_puuid?: string | null;
+};
+
 export type ProviderAvailability = {
   enabled: boolean;
   reason?: string;
@@ -22,7 +32,14 @@ function buildUrl(path: string) {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const message = await response.text();
+    const contentType = response.headers.get("content-type") ?? "";
+    let message = "";
+    if (contentType.includes("application/json")) {
+      const payload = (await response.json()) as { detail?: string; message?: string };
+      message = payload.detail ?? payload.message ?? "";
+    } else {
+      message = await response.text();
+    }
     throw new Error(message || `Request failed with status ${response.status}`);
   }
   return (await response.json()) as T;
@@ -57,6 +74,42 @@ export async function syncProvider(provider: Provider, userId: number = DEFAULT_
 export async function fetchProvidersAvailability(): Promise<ProvidersAvailability> {
   const response = await fetch(buildUrl("/auth/providers"), { cache: "no-store" });
   return handleResponse<ProvidersAvailability>(response);
+}
+
+export async function registerAccount(email: string, password: string) {
+  const response = await fetch(buildUrl("/auth/register"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ email, password }),
+  });
+  return handleResponse<{ ok: boolean }>(response);
+}
+
+export async function loginAccount(email: string, password: string) {
+  const response = await fetch(buildUrl("/auth/login"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ email, password }),
+  });
+  return handleResponse<{ user_id: number; email: string }>(response);
+}
+
+export async function logoutAccount() {
+  const response = await fetch(buildUrl("/auth/logout"), {
+    method: "POST",
+    credentials: "include",
+  });
+  return handleResponse(response);
+}
+
+export async function fetchCurrentUser() {
+  const response = await fetch(buildUrl("/auth/me"), {
+    credentials: "include",
+    cache: "no-store",
+  });
+  return handleResponse<AuthUser>(response);
 }
 
 export function buildProviderLoginUrl(provider: Provider, nextUrl?: string, options?: ProviderLoginOptions) {
