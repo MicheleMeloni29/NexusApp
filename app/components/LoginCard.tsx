@@ -11,8 +11,10 @@ export default function LoginCard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
@@ -27,12 +29,13 @@ export default function LoginCard() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (isSubmitting) return;
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
+    const activeEmail = isRegister ? registerEmail : loginEmail;
+    const trimmedEmail = activeEmail.trim();
+    if (!trimmedEmail || (isRegister ? !registerPassword : !loginPassword)) {
       setStatusMessage("Inserisci email e password.");
       return;
     }
-    if (isRegister && password !== confirmPassword) {
+    if (isRegister && registerPassword !== confirmPassword) {
       setStatusMessage("Le password non coincidono.");
       return;
     }
@@ -40,13 +43,13 @@ export default function LoginCard() {
     setStatusMessage("");
     try {
       if (isRegister) {
-        await registerAccount(trimmedEmail, password);
+        await registerAccount(trimmedEmail, registerPassword);
         setStatusMessage("Check your email to confirm your account.");
-        setPassword("");
+        setRegisterPassword("");
         setConfirmPassword("");
         return;
       }
-      await loginAccount(trimmedEmail, password);
+      await loginAccount(trimmedEmail, loginPassword);
       window.location.href = "/accesso";
     } catch (error) {
       console.error("Account auth failed", error);
@@ -151,8 +154,12 @@ export default function LoginCard() {
                   id="email"
                   name="email"
                   type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                    value={isRegister ? registerEmail : loginEmail}
+                    onChange={(event) =>
+                      isRegister
+                        ? setRegisterEmail(event.target.value)
+                        : setLoginEmail(event.target.value)
+                    }
                   placeholder="name@email.com"
                   className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
                 />
@@ -166,8 +173,12 @@ export default function LoginCard() {
                     id="password"
                     name="password"
                     type={isPasswordVisible ? "text" : "password"}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
+                    value={isRegister ? registerPassword : loginPassword}
+                    onChange={(event) =>
+                      isRegister
+                        ? setRegisterPassword(event.target.value)
+                        : setLoginPassword(event.target.value)
+                    }
                     placeholder={isRegister ? "Create password" : "Enter password"}
                     className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 pr-12 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
                   />
