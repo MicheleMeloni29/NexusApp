@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import AccessoClient from "./AccessoClient";
+import HomePage from "./HomePage";
 
 export default function AccessoPage() {
   return (
@@ -10,7 +10,7 @@ export default function AccessoPage() {
         </main>
       }
     >
-      <AccessoClient />
+      <HomePage />
     </Suspense>
   );
 }

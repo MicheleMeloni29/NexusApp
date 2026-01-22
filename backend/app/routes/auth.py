@@ -138,43 +138,31 @@ async def auth_providers():
 @router.post("/register")
 async def register_account(
   payload: AuthCredentials,
+  response: Response,
   session: Session = Depends(session_dependency),
 ):
   email = _normalize_email(payload.email)
   if not email or not payload.password:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email e password obbligatorie")
   existing = session.exec(select(User).where(User.email == email)).first()
+  if existing:
+    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email gia' registrata")
   salt = os.urandom(16).hex()
   password_hash = _hash_password(payload.password, bytes.fromhex(salt))
-  verification_token = token_urlsafe(32)
-  token_hash = _hash_email_token(verification_token)
-  now = datetime.utcnow()
-
-  if existing:
-    if existing.email_verified:
-      raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email gia' registrata")
-    existing.password_hash = password_hash
-    existing.password_salt = salt
-    existing.email_verified = False
-    existing.email_verification_token = token_hash
-    existing.email_verification_sent_at = now
-    session.add(existing)
-    session.commit()
-    session.refresh(existing)
-    _send_verification_email(existing.email or email, verification_token)
-    return {"ok": True}
 
   user = User(
     email=email,
     password_hash=password_hash,
     password_salt=salt,
-    email_verification_token=token_hash,
-    email_verification_sent_at=now,
+    email_verified=True,
+    email_verification_token=None,
+    email_verification_sent_at=None,
   )
   session.add(user)
   session.commit()
   session.refresh(user)
-  _send_verification_email(user.email or email, verification_token)
+  session_token = _create_session(session, user)
+  _set_session_cookie(response, session_token)
   return {"ok": True}
 
 
@@ -190,11 +178,6 @@ async def login_account(
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenziali non valide")
   if not _verify_password(payload.password, user.password_salt, user.password_hash):
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenziali non valide")
-  if not user.email_verified:
-    raise HTTPException(
-      status_code=status.HTTP_403_FORBIDDEN,
-      detail="Email non verificata. Controlla la tua casella.",
-    )
   token = _create_session(session, user)
   _set_session_cookie(response, token)
   return {"user_id": user.id, "email": user.email}

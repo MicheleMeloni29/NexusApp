@@ -9,6 +9,7 @@ export default function LoginCard() {
   const [statusMessage, setStatusMessage] = useState("");
   const [isVisible, setIsVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
@@ -28,7 +29,7 @@ export default function LoginCard() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || isRedirecting) return;
     const activeEmail = isRegister ? registerEmail : loginEmail;
     const trimmedEmail = activeEmail.trim();
     if (!trimmedEmail || (isRegister ? !registerPassword : !loginPassword)) {
@@ -44,9 +45,13 @@ export default function LoginCard() {
     try {
       if (isRegister) {
         await registerAccount(trimmedEmail, registerPassword);
-        setStatusMessage("Check your email to confirm your account.");
+        setStatusMessage("Registrazione completata. Accesso in corso...");
+        setIsRedirecting(true);
         setRegisterPassword("");
         setConfirmPassword("");
+        setTimeout(() => {
+          window.location.href = "/accesso";
+        }, 1400);
         return;
       }
       await loginAccount(trimmedEmail, loginPassword);
@@ -154,12 +159,12 @@ export default function LoginCard() {
                   id="email"
                   name="email"
                   type="email"
-                    value={isRegister ? registerEmail : loginEmail}
-                    onChange={(event) =>
-                      isRegister
-                        ? setRegisterEmail(event.target.value)
-                        : setLoginEmail(event.target.value)
-                    }
+                  value={isRegister ? registerEmail : loginEmail}
+                  onChange={(event) =>
+                    isRegister
+                      ? setRegisterEmail(event.target.value)
+                      : setLoginEmail(event.target.value)
+                  }
                   placeholder="name@email.com"
                   className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
                 />
@@ -287,13 +292,15 @@ export default function LoginCard() {
               ) : null}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isRedirecting}
                 className="w-full rounded-2xl bg-[var(--brand-purple)] px-6 py-3 text-base font-semibold text-[var(--brand-black)] transition hover:-translate-y-0.5 hover:opacity-90 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isSubmitting
                   ? isRegister
                     ? "Creazione in corso..."
                     : "Accesso in corso..."
+                  : isRedirecting
+                    ? "Accesso in corso..."
                   : isRegister
                     ? "SIGN IN"
                     : "LOG IN"}
