@@ -1,0 +1,119 @@
+{
+  "common": {
+    "appName": "NexusApp",
+    "email": "Email",
+    "id": "ID",
+    "account": "Account",
+    "accountDemo": "Account demo",
+    "loading": "Caricamento in corso...",
+    "backToHome": "Torna alla home",
+    "accessRequired": "Accesso richiesto. Torna alla home per accedere.",
+    "logout": "Esci"
+  },
+  "theme": {
+    "toLight": "Passa al tema chiaro",
+    "toDark": "Passa al tema scuro"
+  },
+  "language": {
+    "toEnglish": "Passa alla lingua inglese",
+    "toItalian": "Passa alla lingua italiana",
+    "codeIt": "IT",
+    "codeEn": "EN"
+  },
+  "homeIntro": {
+    "title": "NEXUSAPP",
+    "subtitle": "LA TUA GAME LEGACY"
+  },
+  "providers": {
+    "steam": "Steam",
+    "riot": "Riot"
+  },
+  "loginCard": {
+    "frontTitle": "COLLEGA I TUOI ACCOUNT",
+    "frontDescription": "Collega i tuoi account. Rivedi il tuo anno di gioco. Genera la tua card eterna.",
+    "frontBulletSteam": "Sync Steam: libreria, ore giocate e titoli preferiti.",
+    "frontBulletRiot": "Sync Riot: rank competitivo, agenti e statistiche recenti.",
+    "frontBulletUnlink": "Puoi scollegare ogni account quando vuoi dal pannello sicurezza.",
+    "frontCta": "Genera la tua Gaming Card",
+    "tabs": {
+      "logIn": "ACCEDI",
+      "signIn": "REGISTRATI"
+    },
+    "labels": {
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Conferma password"
+    },
+    "placeholders": {
+      "email": "nome@email.com",
+      "passwordLogin": "Inserisci password",
+      "passwordCreate": "Crea password",
+      "passwordRepeat": "Ripeti password"
+    },
+    "aria": {
+      "showPassword": "Mostra password",
+      "hidePassword": "Nascondi password"
+    },
+    "status": {
+      "missingFields": "Inserisci email e password.",
+      "passwordMismatch": "Le password non coincidono.",
+      "registerSuccess": "Registrazione completata. Accesso in corso...",
+      "loginInfo": "Dopo l'accesso puoi collegare le piattaforme."
+    },
+    "submit": {
+      "creating": "Creazione in corso...",
+      "loggingIn": "Accesso in corso...",
+      "logIn": "ACCEDI",
+      "signIn": "REGISTRATI"
+    },
+    "errors": {
+      "registerFailed": "Impossibile creare l'account. Riprova.",
+      "invalidCredentials": "Credenziali non valide"
+    },
+    "back": "Indietro"
+  },
+  "accessPage": {
+    "statusConnected": "{{provider}} collegato correttamente.",
+    "providerUnavailable": "Provider non disponibile.",
+    "verified": "Verificato",
+    "notVerified": "Non verificato",
+    "select": "Seleziona",
+    "selected": "Selezionato",
+    "connect": "Collega",
+    "suggestionDefault": "Seleziona le piattaforme verificate e genera il tuo wrap.",
+    "selectAtLeastOne": "Seleziona almeno una piattaforma verificata.",
+    "completeLogin": "Completa il login {{provider}} prima di continuare.",
+    "generateFailed": "Impossibile creare il wrap. Riprova.",
+    "generate": "Genera il wrap",
+    "generating": "Generazione in corso..."
+  },
+  "recap": {
+    "skip": "SALTA",
+    "unwrapped": "UNWRAPPED",
+    "analyzing": "ANALISI DELLE TUE PRESTAZIONI",
+    "mostPlayed": "Gioco piu giocato",
+    "hoursLogged": "{{hours}} ORE GIOCATE",
+    "precision": "Precisione",
+    "headshotRate": "Tasso headshot",
+    "peakRank": "Miglior rank",
+    "peakRankValue": "ASCENDANT",
+    "topPercent": "TOP 5%",
+    "totalMatches": "Match totali",
+    "winRate": "Percentuale vittorie",
+    "mvpAwards": "Premi MVP",
+    "libraryGrowth": "Crescita libreria",
+    "newGames": "Nuovi giochi",
+    "completionRate": "Tasso completamento",
+    "communityImpact": "Impatto comunita",
+    "ggReceived": "GG ricevuti",
+    "messagesSent": "Messaggi inviati",
+    "playstyleTitle": "Il tuo archetipo di gioco",
+    "longestSession": "Sessione piu lunga",
+    "hours": "ORE",
+    "topAchievement": "Traguardo migliore",
+    "topRegional": "Top 500 Regionale",
+    "legacyGenerated": "LEGACY GENERATA",
+    "minting": "Creazione della card...",
+    "unknownGame": "Sconosciuto"
+  }
+}

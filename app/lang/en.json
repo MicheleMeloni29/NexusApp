@@ -1,0 +1,119 @@
+{
+  "common": {
+    "appName": "NexusApp",
+    "email": "Email",
+    "id": "ID",
+    "account": "Account",
+    "accountDemo": "Demo account",
+    "loading": "Loading...",
+    "backToHome": "Back to home",
+    "accessRequired": "Access required. Return to home to log in.",
+    "logout": "Log out"
+  },
+  "theme": {
+    "toLight": "Switch to light theme",
+    "toDark": "Switch to dark theme"
+  },
+  "language": {
+    "toEnglish": "Switch to English",
+    "toItalian": "Switch to Italian",
+    "codeIt": "IT",
+    "codeEn": "EN"
+  },
+  "homeIntro": {
+    "title": "NEXUSAPP",
+    "subtitle": "YOUR GAME LEGACY"
+  },
+  "providers": {
+    "steam": "Steam",
+    "riot": "Riot"
+  },
+  "loginCard": {
+    "frontTitle": "LINK YOUR ACCOUNTS",
+    "frontDescription": "Connect your accounts. Watch your year in review. Generate your eternal card.",
+    "frontBulletSteam": "Steam sync: library, playtime history and most played titles.",
+    "frontBulletRiot": "Riot sync: competitive rank, agents and recent match insights.",
+    "frontBulletUnlink": "You can unlink any account at any time from your security panel.",
+    "frontCta": "Generate your Gaming Card",
+    "tabs": {
+      "logIn": "LOG IN",
+      "signIn": "SIGN IN"
+    },
+    "labels": {
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password"
+    },
+    "placeholders": {
+      "email": "name@email.com",
+      "passwordLogin": "Enter password",
+      "passwordCreate": "Create password",
+      "passwordRepeat": "Repeat password"
+    },
+    "aria": {
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "status": {
+      "missingFields": "Enter email and password.",
+      "passwordMismatch": "Passwords do not match.",
+      "registerSuccess": "Registration complete. Logging in...",
+      "loginInfo": "After logging in, you can connect your platforms."
+    },
+    "submit": {
+      "creating": "Creating...",
+      "loggingIn": "Logging in...",
+      "logIn": "LOG IN",
+      "signIn": "SIGN IN"
+    },
+    "errors": {
+      "registerFailed": "Unable to create account. Please try again.",
+      "invalidCredentials": "Invalid credentials"
+    },
+    "back": "Go Back"
+  },
+  "accessPage": {
+    "statusConnected": "{{provider}} connected successfully.",
+    "providerUnavailable": "Provider unavailable.",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "select": "Select",
+    "selected": "Selected",
+    "connect": "Connect",
+    "suggestionDefault": "Select verified platforms and generate your wrap.",
+    "selectAtLeastOne": "Select at least one verified platform.",
+    "completeLogin": "Complete {{provider}} login before continuing.",
+    "generateFailed": "Unable to generate the wrap. Please try again.",
+    "generate": "Generate the wrap",
+    "generating": "Generating..."
+  },
+  "recap": {
+    "skip": "SKIP",
+    "unwrapped": "UNWRAPPED",
+    "analyzing": "ANALYZING YOUR PERFORMANCE",
+    "mostPlayed": "Most Played Game",
+    "hoursLogged": "{{hours}} HOURS LOGGED",
+    "precision": "Precision",
+    "headshotRate": "Headshot rate",
+    "peakRank": "Peak Rank",
+    "peakRankValue": "ASCENDANT",
+    "topPercent": "TOP 5%",
+    "totalMatches": "Total Matches",
+    "winRate": "Win Rate",
+    "mvpAwards": "MVP Awards",
+    "libraryGrowth": "Library Growth",
+    "newGames": "New Games",
+    "completionRate": "Completion Rate",
+    "communityImpact": "Community Impact",
+    "ggReceived": "GGs Received",
+    "messagesSent": "Messages Sent",
+    "playstyleTitle": "Your Playstyle Archetype",
+    "longestSession": "Longest Session",
+    "hours": "HOURS",
+    "topAchievement": "Top Achievement",
+    "topRegional": "Top 500 Regional",
+    "legacyGenerated": "LEGACY GENERATED",
+    "minting": "Minting your card...",
+    "unknownGame": "Unknown"
+  }
+}

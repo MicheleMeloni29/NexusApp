@@ -2,11 +2,17 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { loginAccount, registerAccount } from "@/lib/api";
+import { useLanguage } from "@/app/components/LanguageProvider";
+
+type Notice =
+  | { kind: "key"; key: string }
+  | { kind: "message"; message: string };
 
 export default function LoginCard() {
+  const { t } = useLanguage();
   const [isFlipped, setIsFlipped] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
+  const [statusNotice, setStatusNotice] = useState<Notice | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -24,7 +30,7 @@ export default function LoginCard() {
   }, []);
 
   useEffect(() => {
-    setStatusMessage("");
+    setStatusNotice(null);
   }, [isRegister]);
 
   const handleSubmit = async (event: FormEvent) => {
@@ -33,19 +39,19 @@ export default function LoginCard() {
     const activeEmail = isRegister ? registerEmail : loginEmail;
     const trimmedEmail = activeEmail.trim();
     if (!trimmedEmail || (isRegister ? !registerPassword : !loginPassword)) {
-      setStatusMessage("Inserisci email e password.");
+      setStatusNotice({ kind: "key", key: "loginCard.status.missingFields" });
       return;
     }
     if (isRegister && registerPassword !== confirmPassword) {
-      setStatusMessage("Le password non coincidono.");
+      setStatusNotice({ kind: "key", key: "loginCard.status.passwordMismatch" });
       return;
     }
     setIsSubmitting(true);
-    setStatusMessage("");
+    setStatusNotice(null);
     try {
       if (isRegister) {
         await registerAccount(trimmedEmail, registerPassword);
-        setStatusMessage("Registrazione completata. Accesso in corso...");
+        setStatusNotice({ kind: "key", key: "loginCard.status.registerSuccess" });
         setIsRedirecting(true);
         setRegisterPassword("");
         setConfirmPassword("");
@@ -58,13 +64,15 @@ export default function LoginCard() {
       window.location.href = "/accesso";
     } catch (error) {
       console.error("Account auth failed", error);
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : isRegister
-            ? "Unable to create account. Please try again."
-            : "Invalid credentials";
-      setStatusMessage(message);
+      const fallbackKey = isRegister
+        ? "loginCard.errors.registerFailed"
+        : "loginCard.errors.invalidCredentials";
+      const message = error instanceof Error && error.message ? error.message : "";
+      setStatusNotice(
+        message
+          ? { kind: "message", message }
+          : { kind: "key", key: fallbackKey }
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -73,14 +81,20 @@ export default function LoginCard() {
   const handleFlip = () => {
     setIsFlipped(true);
     setIsRegister(false);
-    setStatusMessage("");
+    setStatusNotice(null);
   };
 
   const handleBack = () => {
     setIsFlipped(false);
     setIsRegister(false);
-    setStatusMessage("");
+    setStatusNotice(null);
   };
+
+  const statusText = statusNotice
+    ? statusNotice.kind === "message"
+      ? statusNotice.message
+      : t(statusNotice.key)
+    : "";
 
   return (
     <div
@@ -92,24 +106,24 @@ export default function LoginCard() {
         <div className="card-face card-front text-[var(--foreground)] h-full">
           <div className="space-y-3 text-center">
             <span className="text-base xl:text-xl font-bold uppercase tracking-[0.35em] text-[rgba(var(--brand-green-rgb),0.85)]">
-              LINK YOUR ACCOUNTS
+              {t("loginCard.frontTitle")}
             </span>
             <p className="mt-6 text-md text-[rgba(var(--foreground-rgb),0.75)]">
-              Connect your accounts. Watch your year in review. Generate your eternal card.
+              {t("loginCard.frontDescription")}
             </p>
           </div>
           <ul className="mt-8 xl:mt-4 flex-1 space-y-6 xl:space-y-12 text-sm text-[rgba(var(--foreground-rgb),0.75)]">
             <li className="flex gap-3 xl:gap-5">
               <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[var(--brand-green)]" />
-              Steam sync: library, playtime history and most played titles.
+              {t("loginCard.frontBulletSteam")}
             </li>
             <li className="flex gap-3 xl:gap-5">
               <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[var(--brand-green)]" />
-              Riot sync: competitive rank, agents and recent match insights.
+              {t("loginCard.frontBulletRiot")}
             </li>
             <li className="flex gap-3 xl:gap-5">
               <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[var(--brand-green)]" />
-              You can unlink any account at any time from your security panel.
+              {t("loginCard.frontBulletUnlink")}
             </li>
           </ul>
           <div className="space-y-3">
@@ -118,7 +132,7 @@ export default function LoginCard() {
               onClick={handleFlip}
               className="w-full rounded-2xl bg-[var(--brand-green)] px-4 py-3 text-base font-semibold text-[var(--brand-black)] shadow-[0_20px_45px_rgba(var(--brand-green-rgb),0.25)] transition hover:-translate-y-0.5 hover:opacity-90"
             >
-              Generate your Gaming Card
+              {t("loginCard.frontCta")}
             </button>
           </div>
         </div>
@@ -135,7 +149,7 @@ export default function LoginCard() {
                       : "text-[rgba(var(--foreground-rgb),0.65)] hover:text-[var(--foreground)]"
                   }`}
                 >
-                  LOG IN
+                  {t("loginCard.tabs.logIn")}
                 </button>
                 <button
                   type="button"
@@ -146,14 +160,14 @@ export default function LoginCard() {
                       : "text-[rgba(var(--foreground-rgb),0.65)] hover:text-[var(--foreground)]"
                   }`}
                 >
-                  SIGN IN
+                  {t("loginCard.tabs.signIn")}
                 </button>
               </div>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium text-[var(--foreground)]">
-                  Email
+                  {t("loginCard.labels.email")}
                 </label>
                 <input
                   id="email"
@@ -165,13 +179,13 @@ export default function LoginCard() {
                       ? setRegisterEmail(event.target.value)
                       : setLoginEmail(event.target.value)
                   }
-                  placeholder="name@email.com"
+                  placeholder={t("loginCard.placeholders.email")}
                   className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
                 />
               </div>
               <div className="space-y-2">
                 <label htmlFor="password" className="text-sm font-medium text-[var(--foreground)]">
-                  Password
+                  {t("loginCard.labels.password")}
                 </label>
                 <div className="relative">
                   <input
@@ -184,13 +198,21 @@ export default function LoginCard() {
                         ? setRegisterPassword(event.target.value)
                         : setLoginPassword(event.target.value)
                     }
-                    placeholder={isRegister ? "Create password" : "Enter password"}
+                    placeholder={
+                      isRegister
+                        ? t("loginCard.placeholders.passwordCreate")
+                        : t("loginCard.placeholders.passwordLogin")
+                    }
                     className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 pr-12 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
                   />
                   <button
                     type="button"
                     onClick={() => setIsPasswordVisible((prev) => !prev)}
-                    aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                    aria-label={
+                      isPasswordVisible
+                        ? t("loginCard.aria.hidePassword")
+                        : t("loginCard.aria.showPassword")
+                    }
                     className="absolute inset-y-0 right-3 flex items-center text-[rgba(var(--foreground-rgb),0.6)] transition hover:text-[var(--foreground)]"
                   >
                     {isPasswordVisible ? (
@@ -230,7 +252,7 @@ export default function LoginCard() {
               {isRegister && (
                 <div className="space-y-2">
                   <label htmlFor="confirmPassword" className="text-sm font-medium text-[var(--foreground)]">
-                    Confirm password
+                    {t("loginCard.labels.confirmPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -239,13 +261,17 @@ export default function LoginCard() {
                       type={isConfirmPasswordVisible ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(event) => setConfirmPassword(event.target.value)}
-                      placeholder="Repeat password"
+                      placeholder={t("loginCard.placeholders.passwordRepeat")}
                       className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-transparent px-4 py-3 pr-12 text-base text-[var(--foreground)] placeholder:text-[rgba(var(--foreground-rgb),0.45)] focus:border-[var(--brand-purple)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--brand-purple-rgb),0.35)]"
                     />
                     <button
                       type="button"
                       onClick={() => setIsConfirmPasswordVisible((prev) => !prev)}
-                      aria-label={isConfirmPasswordVisible ? "Hide password" : "Show password"}
+                      aria-label={
+                        isConfirmPasswordVisible
+                          ? t("loginCard.aria.hidePassword")
+                          : t("loginCard.aria.showPassword")
+                      }
                       className="absolute inset-y-0 right-3 flex items-center text-[rgba(var(--foreground-rgb),0.6)] transition hover:text-[var(--foreground)]"
                     >
                       {isConfirmPasswordVisible ? (
@@ -283,11 +309,11 @@ export default function LoginCard() {
                   </div>
                 </div>
               )}
-              {statusMessage ? (
-                <p className="text-center text-xs text-[var(--brand-green)]">{statusMessage}</p>
+              {statusText ? (
+                <p className="text-center text-xs text-[var(--brand-green)]">{statusText}</p>
               ) : !isRegister ? (
                 <p className="text-center text-xs text-[rgba(var(--foreground-rgb),0.6)]">
-                    After logging in, you can connect your platforms.
+                  {t("loginCard.status.loginInfo")}
                 </p>
               ) : null}
               <button
@@ -297,13 +323,13 @@ export default function LoginCard() {
               >
                 {isSubmitting
                   ? isRegister
-                    ? "Creazione in corso..."
-                    : "Accesso in corso..."
+                    ? t("loginCard.submit.creating")
+                    : t("loginCard.submit.loggingIn")
                   : isRedirecting
-                    ? "Accesso in corso..."
+                    ? t("loginCard.submit.loggingIn")
                   : isRegister
-                    ? "SIGN IN"
-                    : "LOG IN"}
+                    ? t("loginCard.submit.signIn")
+                    : t("loginCard.submit.logIn")}
               </button>
             </form>
             <div className="">
@@ -312,7 +338,7 @@ export default function LoginCard() {
                 onClick={handleBack}
                 className="w-full rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[rgba(var(--foreground-rgb),0.7)] transition hover:border-[var(--foreground)] hover:text-[var(--foreground)]"
               >
-                Go Back
+                {t("loginCard.back")}
               </button>
             </div>
           </div>
