@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FiMenu, FiMoon, FiSun } from "react-icons/fi";
+import { FiMenu, FiMoon, FiSlash, FiSun } from "react-icons/fi";
 import { VideoRecap } from "@/app/components/VideoRecap";
 import FuzzyText from "@/components/FuzzyText";
 import type { UserStats } from "@/app/types";
 import {
   buildProviderLoginUrl,
+  disconnectProvider,
   fetchCurrentUser,
   fetchProvidersAvailability,
   fetchRecap,
@@ -35,10 +36,6 @@ export default function HomePage() {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [availability, setAvailability] = useState<ProvidersAvailability | null>(null);
-  const [selectedProviders, setSelectedProviders] = useState<Record<Provider, boolean>>({
-    steam: false,
-    riot: false,
-  });
   const [statusNotice, setStatusNotice] = useState<Notice | null>(null);
   const [errorNotice, setErrorNotice] = useState<Notice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -176,30 +173,34 @@ export default function HomePage() {
     window.location.href = redirectUrl;
   };
 
-  const toggleProvider = (provider: Provider) => {
-    if (!linkedProviders[provider]) {
-      return;
+  const handleDisconnect = async (provider: Provider) => {
+    setErrorNotice(null);
+    try {
+      await disconnectProvider(provider);
+      const updatedUser = await fetchCurrentUser();
+      setUser(updatedUser);
+      setStatusNotice({
+        kind: "key",
+        key: "accessPage.statusDisconnected",
+        params: { provider: providerLabels[provider] },
+      });
+    } catch (error) {
+      console.error("Failed to disconnect provider", error);
+      setErrorNotice({
+        kind: "key",
+        key: "accessPage.disconnectFailed",
+        params: { provider: providerLabels[provider] },
+      });
     }
-    setSelectedProviders((prev) => ({ ...prev, [provider]: !prev[provider] }));
   };
 
   const handleGenerate = async () => {
     if (!user) return;
     setErrorNotice(null);
-    const providersToSync = PROVIDERS.filter((provider) => selectedProviders[provider]);
+    const providersToSync = PROVIDERS.filter((provider) => linkedProviders[provider]);
     if (providersToSync.length === 0) {
       setErrorNotice({ kind: "key", key: "accessPage.selectAtLeastOne" });
       return;
-    }
-    for (const provider of providersToSync) {
-      if (!linkedProviders[provider]) {
-        setErrorNotice({
-          kind: "key",
-          key: "accessPage.completeLogin",
-          params: { provider: providerLabels[provider] },
-        });
-        return;
-      }
     }
     setIsSyncing(true);
     try {
@@ -289,8 +290,8 @@ export default function HomePage() {
         <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
           <FuzzyText
             fontSize="clamp(2.1rem,5vw,3rem)"
-            color="#FF00FF" baseIntensity={0.2}
-            hoverIntensity={0.35}>
+            color="#FF00FF" baseIntensity={0.16}
+            hoverIntensity={0.25}>
             {t("common.appName")}
           </FuzzyText>
           <p className="text-sm text-[rgba(var(--foreground-rgb),0.7)]">{t("common.loading")}</p>
@@ -349,8 +350,27 @@ export default function HomePage() {
             return (
               <div
                 key={provider}
-                className="flex flex-col items-center gap-4 rounded-2xl border border-[rgba(var(--foreground-rgb),0.18)] bg-[rgba(var(--foreground-rgb),0.04)] p-5"
+                className={`relative flex flex-col items-center gap-4 rounded-2xl border p-5 ${
+                  isLinked ? "border-[var(--brand-green)]" : "border-[var(--brand-purple)]"
+                } bg-[rgba(var(--foreground-rgb),0.04)]`}
               >
+                {isLinked ? (
+                  <div className="absolute right-3 top-3">
+                    <div className="group relative">
+                      <button
+                        type="button"
+                        onClick={() => handleDisconnect(provider)}
+                        aria-label={t("accessPage.disconnectAria", { provider: label })}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-purple-rgb),0.4)] bg-[rgba(var(--brand-black-rgb),0.35)] text-[var(--brand-purple)] transition hover:scale-105 hover:border-[var(--brand-green)] hover:bg-[var(--brand-green)] hover:text-[var(--brand-black)]"
+                      >
+                        <FiSlash size={16} />
+                      </button>
+                      <span className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-[rgba(var(--foreground-rgb),0.2)] bg-[rgba(var(--brand-black-rgb),0.9)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgba(var(--foreground-rgb),0.85)] opacity-0 transition group-hover:opacity-100">
+                        {t("accessPage.disconnectHint", { provider: label })}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="space-y-1">
                   <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[rgba(var(--foreground-rgb),0.7)]">
                     {label}
@@ -362,16 +382,9 @@ export default function HomePage() {
                 {isLinked ? (
                   <button
                     type="button"
-                    onClick={() => toggleProvider(provider)}
-                    className={`rounded-2xl px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] transition ${
-                      selectedProviders[provider]
-                        ? "bg-[var(--brand-green)] text-[var(--brand-black)]"
-                        : "border border-[rgba(var(--foreground-rgb),0.2)] text-[rgba(var(--foreground-rgb),0.75)] hover:border-[var(--foreground)]"
-                    }`}
+                    className="rounded-2xl bg-[var(--brand-green)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[var(--brand-black)]"
                   >
-                    {selectedProviders[provider]
-                      ? t("accessPage.selected")
-                      : t("accessPage.select")}
+                    {t("accessPage.connected")}
                   </button>
                 ) : (
                   <button

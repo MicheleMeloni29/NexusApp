@@ -71,6 +71,14 @@ export async function syncProvider(provider: Provider, userId: number = DEFAULT_
   return handleResponse(response);
 }
 
+export async function disconnectProvider(provider: Provider) {
+  const response = await fetch(buildUrl(`/auth/disconnect/${provider}`), {
+    method: "POST",
+    credentials: "include",
+  });
+  return handleResponse<{ ok: boolean }>(response);
+}
+
 export async function fetchProvidersAvailability(): Promise<ProvidersAvailability> {
   const response = await fetch(buildUrl("/auth/providers"), { cache: "no-store" });
   return handleResponse<ProvidersAvailability>(response);

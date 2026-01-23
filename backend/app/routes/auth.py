@@ -16,7 +16,7 @@ from sqlmodel import Session, select
 
 from ..config import get_settings
 from ..dependencies import session_dependency
-from ..models import AuthSession, AuthState, RiotToken, User
+from ..models import AuthSession, AuthState, RiotStats, RiotToken, SteamStats, User
 
 router = APIRouter()
 settings = get_settings()
@@ -242,6 +242,37 @@ async def get_current_account(request: Request, session: Session = Depends(sessi
   }
 
 
+@router.post("/disconnect/{provider}")
+async def disconnect_provider(
+  provider: str,
+  request: Request,
+  session: Session = Depends(session_dependency),
+):
+  user = _get_current_user(session, request)
+  if not user:
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+  if provider == "steam":
+    user.steam_id = None
+    steam_stats = session.exec(select(SteamStats).where(SteamStats.user_id == user.id)).first()
+    if steam_stats:
+      session.delete(steam_stats)
+  elif provider == "riot":
+    user.riot_puuid = None
+    riot_token = session.exec(select(RiotToken).where(RiotToken.user_id == user.id)).first()
+    if riot_token:
+      session.delete(riot_token)
+    riot_stats = session.exec(select(RiotStats).where(RiotStats.user_id == user.id)).first()
+    if riot_stats:
+      session.delete(riot_stats)
+  else:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported provider")
+
+  session.add(user)
+  session.commit()
+  return {"ok": True}
+
+
 def _persist_state(
   session: Session,
   provider: str,
@@ -299,7 +330,7 @@ async def _verify_steam_response(params: dict) -> bool:
     "openid.mode": "check_authentication",
   }
   for key, value in params.items():
-    if key.startswith("openid."):
+    if key.startswith("openid.") and key != "openid.mode":
       payload[key] = value
 
   async with httpx.AsyncClient() as client:
