@@ -48,6 +48,10 @@ export default function HomePage() {
       riot: Boolean(user?.riot_connected),
     };
   }, [user]);
+  const hasLinkedProviders = useMemo(
+    () => PROVIDERS.some((provider) => linkedProviders[provider]),
+    [linkedProviders]
+  );
   const providerLabels = useMemo(
     () => ({
       steam: t("providers.steam"),
@@ -223,7 +227,7 @@ export default function HomePage() {
         type="button"
         onClick={() => setIsDark((prev) => !prev)}
         aria-label={isDark ? t("theme.toLight") : t("theme.toDark")}
-        className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-green-rgb),0.25)] bg-[rgba(var(--brand-white-rgb),0.05)] text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-purple)] hover:text-[var(--brand-purple)]"
+        className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-1 border-[var(--brand-green)] bg-[rgba(var(--brand-white-rgb),0.05)] text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-green)] hover:text-[var(--brand-purple)]"
       >
         {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
       </button>
@@ -231,7 +235,7 @@ export default function HomePage() {
         type="button"
         onClick={() => setLanguage(isItalian ? "en" : "it")}
         aria-label={isItalian ? t("language.toEnglish") : t("language.toItalian")}
-        className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-green-rgb),0.25)] text-xs xl:text-sm font-semibold uppercase text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-purple)]"
+        className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-1 border-[var(--brand-green)] text-xs xl:text-sm font-semibold uppercase text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-green)]"
       >
         {isItalian ? t("language.codeIt") : t("language.codeEn")}
       </button>
@@ -247,7 +251,7 @@ export default function HomePage() {
           aria-label={accountMenuLabel}
           aria-haspopup="dialog"
           aria-expanded={isAccountMenuOpen}
-          className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-green-rgb),0.25)] bg-[rgba(var(--brand-white-rgb),0.05)] text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-purple)] hover:text-[var(--brand-purple)]"
+          className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-1 border-[var(--brand-green)] bg-[rgba(var(--brand-white-rgb),0.05)] text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-green)] hover:text-[var(--brand-purple)]"
         >
           <FiMenu size={20} />
         </button>
@@ -405,7 +409,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={handleGenerate}
-          disabled={isSyncing}
+          disabled={isSyncing || !hasLinkedProviders}
           className="w-full rounded-2xl bg-[var(--brand-green)] px-6 py-3 text-sm font-semibold text-[var(--brand-black)] shadow-[0_20px_45px_rgba(var(--brand-green-rgb),0.25)] transition hover:-translate-y-0.5 hover:opacity-90 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSyncing ? t("accessPage.generating") : t("accessPage.generate")}

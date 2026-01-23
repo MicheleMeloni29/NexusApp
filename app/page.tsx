@@ -46,7 +46,7 @@ export default function Home() {
           type="button"
           onClick={() => setIsDark((prev) => !prev)}
           aria-label={isDark ? t("theme.toLight") : t("theme.toDark")}
-          className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-green-rgb),0.25)] bg-[rgba(var(--brand-white-rgb),0.05)] text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-purple)] hover:text-[var(--brand-purple)]"
+          className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[var(--brand-green)] bg-[rgba(var(--brand-white-rgb),0.05)] text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-green)] hover:text-[var(--brand-purple)]"
         >
           {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
         </button>
@@ -54,7 +54,7 @@ export default function Home() {
           type="button"
           onClick={() => setLanguage(isItalian ? "en" : "it")}
           aria-label={isItalian ? t("language.toEnglish") : t("language.toItalian")}
-          className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-green-rgb),0.25)] text-xs xl:text-sm font-semibold uppercase text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-purple)]"
+          className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[var(--brand-green)] text-xs xl:text-sm font-semibold uppercase text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-green)]"
         >
           {isItalian ? t("language.codeIt") : t("language.codeEn")}
         </button>
