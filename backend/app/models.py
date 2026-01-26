@@ -53,6 +53,10 @@ class SteamStats(SQLModel, table=True):
   recent_hours: float = 0
   top_game: Optional[str] = None
   last_played_game: Optional[str] = None
+  persona_name: Optional[str] = None
+  avatar_url: Optional[str] = None
+  profile_level: Optional[int] = None
+  profile_created_at: Optional[int] = None
   last_synced_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
   raw_games: Optional[list] = Field(default=None, sa_column=Column(JSON))
 

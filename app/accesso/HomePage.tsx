@@ -333,15 +333,20 @@ export default function HomePage() {
       {accountMenuButton}
       <div className="w-full max-w-xl space-y-8 text-center">
         <div className="flex w-full justify-center">
-          <div className="inline-block">
-            <FuzzyText
-              fontSize="clamp(2.4rem,5vw,3.2rem)"
-              color="#FF00FF"
-              baseIntensity={0.2}
-              hoverIntensity={0.35}
-            >
-              {t("common.appName")}
-            </FuzzyText>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <div className="inline-block">
+              <FuzzyText
+                fontSize="clamp(2.4rem,5vw,3.2rem)"
+                color="#FF00FF"
+                baseIntensity={0.18}
+                hoverIntensity={0.31}
+              >
+                {t("common.appName")}
+              </FuzzyText>
+            </div>
+            <p className="mt-6 text-[var(--brand-purple)]">
+              {t("accessPage.publicProfileNote")}
+            </p>
           </div>
         </div>
 
@@ -354,9 +359,8 @@ export default function HomePage() {
             return (
               <div
                 key={provider}
-                className={`relative flex flex-col items-center gap-4 rounded-2xl border p-5 ${
-                  isLinked ? "border-[var(--brand-green)]" : "border-[var(--brand-purple)]"
-                } bg-[rgba(var(--foreground-rgb),0.04)]`}
+                className={`relative flex flex-col items-center gap-4 rounded-2xl border p-5 ${isLinked ? "border-[var(--brand-green)]" : "border-[var(--brand-purple)]"
+                  } bg-[rgba(var(--foreground-rgb),0.04)]`}
               >
                 {isLinked ? (
                   <div className="absolute right-3 top-3">

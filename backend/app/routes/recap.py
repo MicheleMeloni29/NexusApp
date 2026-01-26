@@ -21,6 +21,10 @@ def _compose_stats(user: User, steam: SteamStats | None, riot: RiotStats | None)
     stats.top_game = steam.top_game
     stats.total_hours = steam.total_hours
     stats.longest_session = max(int(steam.recent_hours // 2), 0)
+    stats.steam_persona_name = steam.persona_name
+    stats.steam_avatar_url = steam.avatar_url
+    stats.steam_profile_level = steam.profile_level
+    stats.steam_profile_created_at = steam.profile_created_at
     stats.steam_games_count = steam.games_count
     stats.steam_recent_hours = steam.recent_hours
   if riot:

@@ -7,6 +7,10 @@ class UserStats(BaseModel):
   total_hours: float = 0
   playstyle: str = "Strategist"
   longest_session: int = 0
+  steam_persona_name: str | None = None
+  steam_avatar_url: str | None = None
+  steam_profile_level: int | None = None
+  steam_profile_created_at: int | None = None
   steam_games_count: int = 0
   steam_recent_hours: float = 0
   riot_rank: str | None = None

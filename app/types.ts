@@ -4,6 +4,10 @@ export interface UserStats {
   totalHours: number;
   playstyle: string;
   longestSession: number;
+  steamPersonaName: string | null;
+  steamAvatarUrl: string | null;
+  steamProfileLevel: number | null;
+  steamProfileCreatedAt: number | null;
   steamGamesCount: number;
   steamRecentHours: number;
   riotRank: string | null;

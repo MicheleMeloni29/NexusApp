@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence, animate } from 'framer-motion';
 import { UserStats } from '../types';
 import { SkipForward, Crosshair, Zap, Crown, Timer, Gamepad, Brain, Library, Users, Heart, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/app/components/LanguageProvider';
@@ -21,8 +21,38 @@ const scenes = [
 ];
 
 export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
+    const [yearsCounter, setYearsCounter] = useState(0);
+
+    const nickname = stats.steamPersonaName ?? t('recap.unknownPlayer');
+    const avatarUrl = stats.steamAvatarUrl ?? '';
+    const profileLevel = stats.steamProfileLevel;
+    const profileCreatedAt = useMemo(() => {
+        if (!stats.steamProfileCreatedAt) return null;
+        return new Date(stats.steamProfileCreatedAt * 1000);
+    }, [stats.steamProfileCreatedAt]);
+    const yearsActive = useMemo(() => {
+        if (!profileCreatedAt) return 0;
+        const now = new Date();
+        let years = now.getFullYear() - profileCreatedAt.getFullYear();
+        const isBeforeAnniversary =
+            now.getMonth() < profileCreatedAt.getMonth() ||
+            (now.getMonth() === profileCreatedAt.getMonth() && now.getDate() < profileCreatedAt.getDate());
+        if (isBeforeAnniversary) {
+            years -= 1;
+        }
+        return Math.max(0, years);
+    }, [profileCreatedAt]);
+    const createdAtLabel = useMemo(() => {
+        if (!profileCreatedAt) return t('recap.unknownDate');
+        const locale = language === 'it' ? 'it-IT' : 'en-US';
+        return profileCreatedAt.toLocaleDateString(locale, {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        });
+    }, [language, profileCreatedAt, t]);
 
     useEffect(() => {
         const scene = scenes[currentSceneIndex];
@@ -41,6 +71,25 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
 
         return () => clearTimeout(timer);
     }, [currentSceneIndex, onComplete]);
+
+    useEffect(() => {
+        if (currentSceneIndex !== 0) {
+            setYearsCounter(0);
+            return;
+        }
+        if (!profileCreatedAt) {
+            setYearsCounter(0);
+            return;
+        }
+        const controls = animate(0, yearsActive, {
+            duration: 1.6,
+            ease: 'easeOut',
+            onUpdate: (value) => {
+                setYearsCounter(Math.floor(value));
+            },
+        });
+        return () => controls.stop();
+    }, [currentSceneIndex, profileCreatedAt, yearsActive]);
 
     const progress = ((currentSceneIndex + 1) / scenes.length) * 100;
     const topGame = stats.topGame ?? t('recap.unknownGame');
@@ -69,17 +118,79 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
                 {currentSceneIndex === 0 && (
                     <motion.div
                         key="intro"
-                        initial={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.2, filter: 'blur(10px)' }}
-                        className="text-center"
+                        exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
+                        className="text-center w-full max-w-4xl px-6"
                     >
-                        <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter text-white mb-4">
-                            {stats.year}<br />{t('recap.unwrapped')}
-                        </h1>
-                        <p className="text-2xl text-gaming-accent font-mono animate-pulse">
-                            {t('recap.analyzing')}
-                        </p>
+                        <div className="flex flex-col items-center gap-8">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.85 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.8, ease: 'easeOut' }}
+                                className="relative"
+                            >
+                                {avatarUrl ? (
+                                    <img
+                                        src={avatarUrl}
+                                        alt={t('recap.avatarAlt', { name: nickname })}
+                                        className="h-28 w-28 md:h-36 md:w-36 rounded-full border-4 border-[var(--brand-purple)] object-cover shadow-[0_0_40px_rgba(var(--brand-purple-rgb),0.35)]"
+                                    />
+                                ) : (
+                                    <div className="flex h-28 w-28 md:h-36 md:w-36 items-center justify-center rounded-full border-4 border-[var(--brand-purple)] bg-white/5 text-4xl font-black text-white shadow-[0_0_40px_rgba(var(--brand-purple-rgb),0.35)]">
+                                        {nickname.charAt(0).toUpperCase() || 'N'}
+                                    </div>
+                                )}
+                            </motion.div>
+                            <div className="space-y-6 text-center">
+                                <p className="text-xs uppercase tracking-[0.4em] text-white/50">
+                                    {t('recap.introTitle')}
+                                </p>
+                                <div className="relative inline-block">
+                                    <span className="relative z-10 text-4xl md:text-6xl font-black tracking-tight text-white">
+                                        {nickname}
+                                    </span>
+                                    <span
+                                        aria-hidden="true"
+                                        className="glitch-layer glitch-layer-1 text-4xl md:text-6xl font-black tracking-tight text-fuchsia-500"
+                                    >
+                                        {nickname}
+                                    </span>
+                                    <span
+                                        aria-hidden="true"
+                                        className="glitch-layer glitch-layer-2 text-4xl md:text-6xl font-black tracking-tight text-cyan-400"
+                                    >
+                                        {nickname}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                                        <p className="text-xs uppercase tracking-widest text-white/50">
+                                            {t('recap.profileLevel')}
+                                        </p>
+                                        <p className="mt-2 text-2xl font-bold text-white">
+                                            {profileLevel ?? '--'}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                                        <p className="text-xs uppercase tracking-widest text-white/50">
+                                            {t('recap.profileCreated')}
+                                        </p>
+                                        <p className="mt-2 text-lg font-semibold text-white">
+                                            {createdAtLabel}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                                        <p className="text-xs uppercase tracking-widest text-white/50">
+                                            {t('recap.yearsActive')}
+                                        </p>
+                                        <p className="mt-2 text-2xl font-bold text-[var(--brand-green)] tabular-nums">
+                                            {profileCreatedAt ? yearsCounter : '--'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
 
