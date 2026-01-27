@@ -207,6 +207,10 @@ body::-webkit-scrollbar {
 
 /*COLORI TEMA CHIARO*/
 .light {
+  --brand-green: #66c700;
+  --brand-green-rgb: 102, 199, 0;
+  --brand-purple: #b800b8;
+  --brand-purple-rgb: 184, 0, 184;
   --background: #e8e9ffed;
   --foreground: var(--brand-black);
   --foreground-rgb: 0, 0, 0;
@@ -225,12 +229,12 @@ body::-webkit-scrollbar {
   --destructive: var(--brand-green);
   --border: rgba(var(--brand-black-rgb), 0.15);
   --input: rgba(var(--brand-black-rgb), 0.15);
-  --ring: rgba(var(--brand-purple-rgb), 0.35);
+  --ring: rgba(var(--brand-purple-rgb), 0.45);
   --chart-1: var(--brand-purple);
   --chart-2: var(--brand-green);
   --chart-3: var(--brand-black);
-  --chart-4: rgba(var(--brand-purple-rgb), 0.7);
-  --chart-5: rgba(var(--brand-green-rgb), 0.7);
+  --chart-4: rgba(var(--brand-purple-rgb), 0.78);
+  --chart-5: rgba(var(--brand-green-rgb), 0.78);
   --sidebar: rgba(var(--brand-white-rgb), 0.95);
   --sidebar-foreground: var(--brand-black);
   --sidebar-primary: var(--brand-purple);
@@ -238,7 +242,7 @@ body::-webkit-scrollbar {
   --sidebar-accent: var(--brand-green);
   --sidebar-accent-foreground: var(--brand-black);
   --sidebar-border: rgba(var(--brand-black-rgb), 0.15);
-  --sidebar-ring: rgba(var(--brand-purple-rgb), 0.35);
+  --sidebar-ring: rgba(var(--brand-purple-rgb), 0.45);
 }
 
 @layer base {

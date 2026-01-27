@@ -260,7 +260,7 @@ export default function HomePage() {
             ref={accountMenuRef}
             role="dialog"
             aria-label={accountMenuLabel}
-            className="absolute left-0 mt-3 w-64 rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] bg-[rgba(var(--brand-black-rgb),0.92)] p-4 text-left shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+            className="absolute left-0 mt-3 w-64 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 text-left text-[var(--card-foreground)] shadow-[0_20px_60px_rgba(var(--brand-black-rgb),0.35)]"
           >
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[rgba(var(--foreground-rgb),0.6)]">
               {accountMenuLabel}
@@ -373,7 +373,7 @@ export default function HomePage() {
                       >
                         <FiSlash size={16} />
                       </button>
-                      <span className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-[rgba(var(--foreground-rgb),0.2)] bg-[rgba(var(--brand-black-rgb),0.9)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgba(var(--foreground-rgb),0.85)] opacity-0 transition group-hover:opacity-100">
+                      <span className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgba(var(--foreground-rgb),0.85)] opacity-0 transition group-hover:opacity-100">
                         {t("accessPage.disconnectHint", { provider: label })}
                       </span>
                     </div>
