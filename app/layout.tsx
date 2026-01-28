@@ -1,22 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { LanguageProvider } from "@/app/components/LanguageProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
-const vermillion22 = localFont({
-  src: "./fonts/Vermillion22.otf",
-  variable: "--font-vermillion-22",
+const oxaniumLight = localFont({
+  src: "./fonts/Oxanium-Light.ttf",
+  variable: "--font-oxanium-light",
   display: "swap",
 });
 
@@ -33,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${vermillion22.variable} antialiased`}
+        className={`${geistMono.variable} ${oxaniumLight.variable} antialiased`}
       >
         <LanguageProvider>{children}</LanguageProvider>
       </body>

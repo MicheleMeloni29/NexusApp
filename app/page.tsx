@@ -20,7 +20,7 @@ export default function Home() {
   }, [isDark]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowIntro(false), 1500);
+    const timer = setTimeout(() => setShowIntro(false), 3000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -62,12 +62,16 @@ export default function Home() {
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
         {showIntro && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 text-center pointer-events-none">
-            <FuzzyText fontSize="clamp(2.5rem,8vw,5rem)" color="#FF00FF" baseIntensity={0.2} hoverIntensity={0.35}>
-              {t("homeIntro.title")}
-            </FuzzyText>
-            <FuzzyText fontSize="clamp(1.4rem,6vw,3.5rem)" color="#FF00FF" baseIntensity={0.14} hoverIntensity={0.24}>
-              {t("homeIntro.subtitle")}
-            </FuzzyText>
+            <div className="intro-fade intro-delay-1">
+              <FuzzyText fontSize="clamp(2.5rem,8vw,5rem)" color="#FF00FF" baseIntensity={0.2} hoverIntensity={0.35}>
+                {t("homeIntro.title")}
+              </FuzzyText>
+            </div>
+            <div className="intro-fade intro-delay-2">
+              <FuzzyText fontSize="clamp(1.4rem,6vw,3.5rem)" color="#FF00FF" baseIntensity={0.14} hoverIntensity={0.24}>
+                {t("homeIntro.subtitle")}
+              </FuzzyText>
+            </div>
           </div>
         )}
         {!showIntro && <LoginCard />}

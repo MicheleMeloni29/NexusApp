@@ -310,7 +310,7 @@ export default function HomePage() {
         {topControls}
         {accountMenuButton}
         <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
-          <FuzzyText fontSize="clamp(2.1rem,5vw,3rem)" color="#FF00FF" baseIntensity={0.2} hoverIntensity={0.35}>
+          <FuzzyText fontSize="clamp(2.3rem,5vw,3rem)" color="#FF00FF" baseIntensity={0.16} hoverIntensity={0.32}>
             {t("common.appName")}
           </FuzzyText>
           <p className="text-sm text-[rgba(var(--foreground-rgb),0.7)]">
@@ -369,9 +369,9 @@ export default function HomePage() {
                         type="button"
                         onClick={() => handleDisconnect(provider)}
                         aria-label={t("accessPage.disconnectAria", { provider: label })}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[rgba(var(--brand-purple-rgb),0.4)] bg-[rgba(var(--brand-black-rgb),0.35)] text-[var(--brand-purple)] transition hover:scale-105 hover:border-[var(--brand-green)] hover:bg-[var(--brand-green)] hover:text-[var(--brand-black)]"
+                        className="flex h-8 w-8 items-center justify-center text-[var(--brand-purple)] transition hover:scale-105 hover:border-[var(--brand-green)] hover:bg-[var(--brand-green)] hover:text-[var(--brand-black)]"
                       >
-                        <FiSlash size={16} />
+                        <FiSlash size={20} />
                       </button>
                       <span className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgba(var(--foreground-rgb),0.85)] opacity-0 transition group-hover:opacity-100">
                         {t("accessPage.disconnectHint", { provider: label })}
@@ -380,7 +380,7 @@ export default function HomePage() {
                   </div>
                 ) : null}
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[rgba(var(--foreground-rgb),0.7)]">
+                  <p className="text-base font-semibold uppercase tracking-[0.35em] text-[rgba(var(--foreground-rgb),0.7)]">
                     {label}
                   </p>
                   <p className="text-xs text-[rgba(var(--foreground-rgb),0.6)]">
@@ -409,12 +409,15 @@ export default function HomePage() {
           })}
         </div>
 
-        <p className={`text-xs ${suggestionTone}`}>{suggestionText}</p>
+        {/* SCRITTA PRE PULSANTE INFERIORE */}
+        <p className={`text-xs text-[var(--brand-purple)]`}>{suggestionText}</p>
+
+        {/* BOTTONE INFERIORE, SE COLLEGATO CORRETTAMENTE ALMENO AD UNA PIATTAFORMA STEAM/RIOT, GENERA IL WRAP */}
         <button
           type="button"
           onClick={handleGenerate}
           disabled={isSyncing || !hasLinkedProviders}
-          className="w-full rounded-2xl bg-[var(--brand-green)] px-6 py-3 text-sm font-semibold text-[var(--brand-black)] shadow-[0_20px_45px_rgba(var(--brand-green-rgb),0.25)] transition hover:-translate-y-0.5 hover:opacity-90 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full rounded-2xl bg-[var(--brand-green)] px-6 py-3 text-base font-semibold text-[var(--brand-black)] shadow-[0_20px_45px_rgba(var(--brand-green-rgb),0.25)] transition hover:-translate-y-0.5 hover:opacity-90 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSyncing ? t("accessPage.generating") : t("accessPage.generate")}
         </button>

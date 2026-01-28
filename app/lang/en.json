@@ -90,7 +90,7 @@
     "disconnectFailed": "Unable to disconnect {{provider}}. Please try again.",
     "completeLogin": "Complete {{provider}} login before continuing.",
     "generateFailed": "Unable to generate the wrap. Please try again.",
-    "generate": "Generate the wrap",
+    "generate": "GENERATE WRAP",
     "generating": "Generating..."
   },
   "recap": {

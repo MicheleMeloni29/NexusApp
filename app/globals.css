@@ -6,9 +6,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-oxanium-light);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-vermillion-22);
+  --font-display: var(--font-oxanium-light);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -256,7 +256,7 @@ body::-webkit-scrollbar {
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-vermillion-22), var(--font-geist-sans);
+    font-family: var(--font-oxanium-light), sans-serif;
   }
 }
 
@@ -314,9 +314,36 @@ body::-webkit-scrollbar {
   }
 }
 
+/* ANIMAZIONE SCRITTE INTRO */
+@keyframes intro-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
 @layer utilities {
   .font-display {
-    font-family: var(--font-vermillion-22), var(--font-geist-sans);
+    font-family: var(--font-oxanium-light), sans-serif;
+  }
+
+  .intro-fade {
+    opacity: 0;
+    transform-origin: center;
+    animation: intro-scale-in 0.6s ease-in forwards;
+  }
+
+  .intro-delay-1 {
+    animation-delay: 0.5s;
+  }
+
+  .intro-delay-2 {
+    animation-delay: 1.5s;
   }
 
   .glitch-layer {
