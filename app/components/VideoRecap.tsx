@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence, animate } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { UserStats } from '../types';
-import { SkipForward, Crosshair, Zap, Crown, Timer, Gamepad, Brain, Library, Users, Heart, MessageCircle } from 'lucide-react';
+import { Pause, Play, SkipForward } from 'lucide-react';
 import { useLanguage } from '@/app/components/LanguageProvider';
+import { FirstScene } from '@/app/components/videorecapScene/FirstScene';
+import { SecondScene } from '@/app/components/videorecapScene/SecondScene';
 
 interface VideoRecapProps {
     onComplete: () => void;
@@ -10,49 +12,23 @@ interface VideoRecapProps {
 }
 
 const scenes = [
-    { id: 'intro', duration: 2500 },
-    { id: 'top_game', duration: 3000 },
-    { id: 'fps', duration: 3000 },
-    { id: 'moba', duration: 3000 },
-    { id: 'collection', duration: 3000 },
-    { id: 'social', duration: 3000 },
-    { id: 'playstyle', duration: 3000 },
-    { id: 'outro', duration: 3000 },
+    { id: 'intro', duration: 3500 },
+    { id: 'total_time', duration: 3500 },
 ];
 
 export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => {
-    const { t, language } = useLanguage();
+    const { t } = useLanguage();
     const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
-    const [yearsCounter, setYearsCounter] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+    const [sceneProgress, setSceneProgress] = useState(0);
+    const elapsedRef = useRef(0);
+    const lastTimestampRef = useRef<number | null>(null);
 
-    const nickname = stats.steamPersonaName ?? t('recap.unknownPlayer');
-    const avatarUrl = stats.steamAvatarUrl ?? '';
-    const profileLevel = stats.steamProfileLevel;
-    const profileCreatedAt = useMemo(() => {
-        if (!stats.steamProfileCreatedAt) return null;
-        return new Date(stats.steamProfileCreatedAt * 1000);
-    }, [stats.steamProfileCreatedAt]);
-    const yearsActive = useMemo(() => {
-        if (!profileCreatedAt) return 0;
-        const now = new Date();
-        let years = now.getFullYear() - profileCreatedAt.getFullYear();
-        const isBeforeAnniversary =
-            now.getMonth() < profileCreatedAt.getMonth() ||
-            (now.getMonth() === profileCreatedAt.getMonth() && now.getDate() < profileCreatedAt.getDate());
-        if (isBeforeAnniversary) {
-            years -= 1;
-        }
-        return Math.max(0, years);
-    }, [profileCreatedAt]);
-    const createdAtLabel = useMemo(() => {
-        if (!profileCreatedAt) return t('recap.unknownDate');
-        const locale = language === 'it' ? 'it-IT' : 'en-US';
-        return profileCreatedAt.toLocaleDateString(locale, {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-        });
-    }, [language, profileCreatedAt, t]);
+    useEffect(() => {
+        elapsedRef.current = 0;
+        lastTimestampRef.current = null;
+        setSceneProgress(0);
+    }, [currentSceneIndex]);
 
     useEffect(() => {
         const scene = scenes[currentSceneIndex];
@@ -60,318 +36,94 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
             onComplete();
             return;
         }
+        if (isPaused) {
+            lastTimestampRef.current = null;
+            return;
+        }
 
-        const timer = setTimeout(() => {
-            if (currentSceneIndex < scenes.length - 1) {
-                setCurrentSceneIndex(prev => prev + 1);
-            } else {
-                onComplete();
+        let rafId = 0;
+        const tick = (timestamp: number) => {
+            if (lastTimestampRef.current === null) {
+                lastTimestampRef.current = timestamp;
             }
-        }, scene.duration);
+            const delta = timestamp - lastTimestampRef.current;
+            lastTimestampRef.current = timestamp;
+            elapsedRef.current += delta;
 
-        return () => clearTimeout(timer);
-    }, [currentSceneIndex, onComplete]);
+            const progress = Math.min(elapsedRef.current / scene.duration, 1);
+            setSceneProgress(progress);
 
-    useEffect(() => {
-        if (currentSceneIndex !== 0) {
-            setYearsCounter(0);
-            return;
-        }
-        if (!profileCreatedAt) {
-            setYearsCounter(0);
-            return;
-        }
-        const controls = animate(0, yearsActive, {
-            duration: 1.6,
-            ease: 'easeOut',
-            onUpdate: (value) => {
-                setYearsCounter(Math.floor(value));
-            },
-        });
-        return () => controls.stop();
-    }, [currentSceneIndex, profileCreatedAt, yearsActive]);
+            if (progress >= 1) {
+                if (currentSceneIndex < scenes.length - 1) {
+                    setCurrentSceneIndex(prev => prev + 1);
+                } else {
+                    onComplete();
+                }
+                return;
+            }
+            rafId = requestAnimationFrame(tick);
+        };
 
-    const progress = ((currentSceneIndex + 1) / scenes.length) * 100;
-    const topGame = stats.topGame ?? t('recap.unknownGame');
+        rafId = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafId);
+    }, [currentSceneIndex, isPaused, onComplete]);
+
+    const currentScene = scenes[currentSceneIndex];
 
     return (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center overflow-hidden">
+        <div className="fixed inset-0 text-[var(--foreground)] z-50 flex flex-col items-center justify-center overflow-hidden">
+            {/* Pause Button */}
+            <button
+                onClick={() => setIsPaused(prev => !prev)}
+                aria-label={isPaused ? t('recap.resume') : t('recap.pause')}
+                className="absolute top-8 left-8 text-[rgba(var(--foreground-rgb),0.6)] hover:text-[var(--foreground)] flex items-center gap-2 z-50 transition-colors"
+            >
+                {isPaused ? <Play size={20} /> : <Pause size={20} />}
+            </button>
+
             {/* Skip Button */}
             <button
                 onClick={onComplete}
-                className="absolute top-8 right-8 text-white/50 hover:text-white flex items-center gap-2 z-50 transition-colors"
+                className="absolute top-8 right-8 text-[rgba(var(--foreground-rgb),0.6)] hover:text-[var(--foreground)] flex items-center gap-2 z-50 transition-colors"
             >
                 {t('recap.skip')} <SkipForward size={20} />
             </button>
 
-            {/* Progress Bar */}
-            <div className="absolute bottom-10 left-10 right-10 h-1 bg-gray-800 rounded-full overflow-hidden z-50">
-                <motion.div
-                    className="h-full bg-gaming-accent"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.5 }}
-                />
+            {/* Scene Progress */}
+            <div className="absolute bottom-10 left-10 right-10 z-50">
+                <div className="flex items-center gap-2">
+                    {scenes.map((scene, index) => {
+                        const isPast = index < currentSceneIndex;
+                        const isCurrent = index === currentSceneIndex;
+                        return (
+                            <div
+                                key={scene.id}
+                                className="h-1.5 flex-1 rounded-full bg-[rgba(var(--foreground-rgb),0.2)] overflow-hidden"
+                            >
+                                {isPast ? (
+                                    <div className="h-full w-full bg-[var(--brand-purple)] shadow-[0_0_14px_rgba(var(--brand-purple-rgb),0.6)]" />
+                                ) : isCurrent ? (
+                                    <div
+                                        className="h-full bg-[var(--brand-purple)] shadow-[0_0_14px_rgba(var(--brand-purple-rgb),0.6)]"
+                                        style={{ width: `${sceneProgress * 100}%` }}
+                                    />
+                                ) : null}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             <AnimatePresence mode="wait">
                 {currentSceneIndex === 0 && (
-                    <motion.div
-                        key="intro"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
-                        className="text-center w-full max-w-4xl px-6"
-                    >
-                        <div className="flex flex-col items-center gap-8">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.85 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.8, ease: 'easeOut' }}
-                                className="relative"
-                            >
-                                {avatarUrl ? (
-                                    <img
-                                        src={avatarUrl}
-                                        alt={t('recap.avatarAlt', { name: nickname })}
-                                        className="h-28 w-28 md:h-36 md:w-36 rounded-full border-4 border-[var(--brand-purple)] object-cover shadow-[0_0_40px_rgba(var(--brand-purple-rgb),0.35)]"
-                                    />
-                                ) : (
-                                    <div className="flex h-28 w-28 md:h-36 md:w-36 items-center justify-center rounded-full border-4 border-[var(--brand-purple)] bg-white/5 text-4xl font-black text-white shadow-[0_0_40px_rgba(var(--brand-purple-rgb),0.35)]">
-                                        {nickname.charAt(0).toUpperCase() || 'N'}
-                                    </div>
-                                )}
-                            </motion.div>
-                            <div className="space-y-6 text-center">
-                                <p className="text-xs uppercase tracking-[0.4em] text-white/50">
-                                    {t('recap.introTitle')}
-                                </p>
-                                <div className="relative inline-block">
-                                    <span className="relative z-10 text-4xl md:text-6xl font-black tracking-tight text-white">
-                                        {nickname}
-                                    </span>
-                                    <span
-                                        aria-hidden="true"
-                                        className="glitch-layer glitch-layer-1 text-4xl md:text-6xl font-black tracking-tight text-fuchsia-500"
-                                    >
-                                        {nickname}
-                                    </span>
-                                    <span
-                                        aria-hidden="true"
-                                        className="glitch-layer glitch-layer-2 text-4xl md:text-6xl font-black tracking-tight text-cyan-400"
-                                    >
-                                        {nickname}
-                                    </span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                                        <p className="text-xs uppercase tracking-widest text-white/50">
-                                            {t('recap.profileLevel')}
-                                        </p>
-                                        <p className="mt-2 text-2xl font-bold text-white">
-                                            {profileLevel ?? '--'}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                                        <p className="text-xs uppercase tracking-widest text-white/50">
-                                            {t('recap.profileCreated')}
-                                        </p>
-                                        <p className="mt-2 text-lg font-semibold text-white">
-                                            {createdAtLabel}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                                        <p className="text-xs uppercase tracking-widest text-white/50">
-                                            {t('recap.yearsActive')}
-                                        </p>
-                                        <p className="mt-2 text-2xl font-bold text-[var(--brand-green)] tabular-nums">
-                                            {profileCreatedAt ? yearsCounter : '--'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
+                    <FirstScene stats={stats} isPaused={isPaused} />
+                )}
+                {currentSceneIndex === 1 && (
+                    <SecondScene stats={stats} isPaused={isPaused} />
                 )}
 
-                {currentSceneIndex === 1 && ( // Top Game Scene
-                    <motion.div
-                        key="top_game"
-                        initial={{ y: 50, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -50, opacity: 0 }}
-                        className="text-center w-full max-w-4xl px-6"
-                    >
-                        <Gamepad className="w-24 h-24 text-purple-500 mx-auto mb-8" />
-                        <h2 className="text-gray-400 text-xl font-mono mb-4 uppercase tracking-widest">{t('recap.mostPlayed')}</h2>
-                        <h1 className="text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
-                            {topGame.toUpperCase()}
-                        </h1>
-                        <div className="inline-block bg-purple-500/20 px-8 py-3 rounded-full border border-purple-500/50">
-                            <p className="text-purple-400 font-bold text-xl">
-                                {t('recap.hoursLogged', { hours: Math.floor(stats.totalHours * 0.7) })}
-                            </p>
-                        </div>
-                    </motion.div>
-                )}
-
-                {currentSceneIndex === 2 && ( // FPS Stats
-                    <motion.div
-                        key="fps"
-                        initial={{ x: 100, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: -100, opacity: 0 }}
-                        className="w-full max-w-4xl px-6 flex flex-col items-center"
-                    >
-                        <Crosshair className="w-24 h-24 text-red-500 mb-8" />
-                        <div className="grid grid-cols-2 gap-12 text-center w-full">
-                            <div className="bg-gray-900/50 p-6 rounded-2xl border border-gray-800">
-                                <h3 className="text-gray-400 text-sm font-mono mb-2 uppercase">{t('recap.precision')}</h3>
-                                <p className="text-6xl font-bold text-white">42%</p>
-                                <p className="text-red-500 text-sm mt-1">{t('recap.headshotRate')}</p>
-                            </div>
-                            <div className="bg-gray-900/50 p-6 rounded-2xl border border-gray-800">
-                                <h3 className="text-gray-400 text-sm font-mono mb-2 uppercase">{t('recap.peakRank')}</h3>
-                                <p className="text-5xl font-bold text-white tracking-tight">{t('recap.peakRankValue')}</p>
-                                <p className="text-red-500 text-sm mt-1">{t('recap.topPercent')}</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {currentSceneIndex === 3 && ( // MOBA Stats
-                    <motion.div
-                        key="moba"
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -100, opacity: 0 }}
-                        className="w-full max-w-4xl px-6 flex flex-col items-center"
-                    >
-                        <Zap className="w-24 h-24 text-yellow-400 mb-8" />
-                        <div className="grid grid-cols-3 gap-6 text-center w-full">
-                            <div className="p-4">
-                                <h3 className="text-gray-400 text-sm font-mono mb-1">{t('recap.totalMatches')}</h3>
-                                <p className="text-5xl font-bold text-white">1,337</p>
-                            </div>
-                            <div className="p-4 border-x border-gray-800">
-                                <h3 className="text-gray-400 text-sm font-mono mb-1">{t('recap.winRate')}</h3>
-                                <p className="text-5xl font-bold text-yellow-400">58%</p>
-                            </div>
-                            <div className="p-4">
-                                <h3 className="text-gray-400 text-sm font-mono mb-1">{t('recap.mvpAwards')}</h3>
-                                <p className="text-5xl font-bold text-white">84</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {currentSceneIndex === 4 && ( // Collection Scene
-                    <motion.div
-                        key="collection"
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 1.2, opacity: 0 }}
-                        className="text-center w-full max-w-4xl px-6"
-                    >
-                        <Library className="w-24 h-24 text-green-400 mx-auto mb-8" />
-                        <h2 className="text-gray-400 text-xl font-mono mb-4 uppercase tracking-widest">{t('recap.libraryGrowth')}</h2>
-                        <div className="grid grid-cols-2 gap-8 mt-8">
-                            <div className="bg-gray-900/50 p-6 rounded-2xl border border-green-500/30">
-                                <p className="text-6xl font-bold text-white mb-2">12</p>
-                                <p className="text-green-400 text-sm uppercase font-bold">{t('recap.newGames')}</p>
-                            </div>
-                            <div className="bg-gray-900/50 p-6 rounded-2xl border border-green-500/30">
-                                <p className="text-6xl font-bold text-white mb-2">100%</p>
-                                <p className="text-green-400 text-sm uppercase font-bold">{t('recap.completionRate')}</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {currentSceneIndex === 5 && ( // Social Stats Scene
-                    <motion.div
-                        key="social"
-                        initial={{ x: -100, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: 100, opacity: 0 }}
-                        className="text-center w-full max-w-4xl px-6"
-                    >
-                        <Users className="w-24 h-24 text-pink-500 mx-auto mb-8" />
-                        <h2 className="text-gray-400 text-xl font-mono mb-8 uppercase tracking-widest">{t('recap.communityImpact')}</h2>
-                        <div className="flex flex-col gap-6 items-center">
-                            <div className="flex items-center gap-4 w-full justify-center">
-                                <Heart className="text-pink-500" />
-                                <span className="text-3xl font-bold text-white">
-                                    450 <span className="text-gray-500 text-lg">{t('recap.ggReceived')}</span>
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-4 w-full justify-center">
-                                <MessageCircle className="text-pink-500" />
-                                <span className="text-3xl font-bold text-white">
-                                    8,421 <span className="text-gray-500 text-lg">{t('recap.messagesSent')}</span>
-                                </span>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {currentSceneIndex === 6 && ( // Playstyle Scene
-                    <motion.div
-                        key="playstyle"
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 1.1, opacity: 0 }}
-                        className="text-center w-full max-w-4xl px-6"
-                    >
-                        <Brain className="w-24 h-24 text-cyan-400 mx-auto mb-8" />
-                        <h2 className="text-gray-400 text-xl font-mono mb-4 uppercase tracking-widest">{t('recap.playstyleTitle')}</h2>
-                        <h1 className="text-5xl md:text-6xl font-black text-white mb-8">
-                            "{stats.playstyle.toUpperCase()}"
-                        </h1>
-                        <div className="flex justify-center gap-8 text-left">
-                            <div className="flex items-center gap-3">
-                                <Timer className="text-cyan-400" />
-                                <div>
-                                    <p className="text-xs text-gray-500 uppercase">{t('recap.longestSession')}</p>
-                                    <p className="text-xl font-bold text-white">
-                                        {stats.longestSession} {t('recap.hours')}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Crown className="text-cyan-400" />
-                                <div>
-                                    <p className="text-xs text-gray-500 uppercase">{t('recap.topAchievement')}</p>
-                                    <p className="text-xl font-bold text-white">{t('recap.topRegional')}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {currentSceneIndex === 7 && (
-                    <motion.div
-                        key="outro"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="text-center"
-                    >
-                        <div className="relative inline-block">
-                            <div className="absolute -inset-10 bg-gaming-accent/20 blur-xl rounded-full animate-pulse-slow"></div>
-                            <Crown className="relative z-10 w-32 h-32 text-gaming-accent mx-auto mb-8" />
-                        </div>
-                        <h2 className="text-4xl md:text-6xl font-bold mb-4">{t('recap.legacyGenerated')}</h2>
-                        <p className="text-gray-400">{t('recap.minting')}</p>
-                    </motion.div>
-                )}
             </AnimatePresence>
 
-            {/* Background Ambience */}
-            <div className="absolute inset-0 pointer-events-none z-0">
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gaming-500/10 rounded-full blur-[120px] animate-pulse-slow"></div>
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] animate-pulse-slow" style={{ animationDelay: '1.5s' }}></div>
-            </div>
         </div>
     );
 };
