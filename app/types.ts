@@ -8,6 +8,7 @@ export interface UserStats {
   steamAvatarUrl: string | null;
   steamProfileLevel: number | null;
   steamProfileCreatedAt: number | null;
+  steamTopGames: { name: string; hours: number }[];
   steamGamesCount: number;
   steamRecentHours: number;
   riotRank: string | null;

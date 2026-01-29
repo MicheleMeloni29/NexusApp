@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
 
+class SteamTopGame(BaseModel):
+  name: str
+  hours: float
+
+
 class UserStats(BaseModel):
   year: int = 2024
   top_game: str | None = None
@@ -11,6 +16,7 @@ class UserStats(BaseModel):
   steam_avatar_url: str | None = None
   steam_profile_level: int | None = None
   steam_profile_created_at: int | None = None
+  steam_top_games: list[SteamTopGame] = []
   steam_games_count: int = 0
   steam_recent_hours: float = 0
   riot_rank: str | None = None

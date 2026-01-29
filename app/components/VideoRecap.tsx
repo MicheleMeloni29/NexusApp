@@ -5,15 +5,18 @@ import { Pause, Play, SkipForward } from 'lucide-react';
 import { useLanguage } from '@/app/components/LanguageProvider';
 import { FirstScene } from '@/app/components/videorecapScene/FirstScene';
 import { SecondScene } from '@/app/components/videorecapScene/SecondScene';
+import { ThirdScene } from '@/app/components/videorecapScene/ThirdScene';
 
 interface VideoRecapProps {
     onComplete: () => void;
     stats: UserStats;
 }
 
+// DURATA DELLE SCENE
 const scenes = [
-    { id: 'intro', duration: 3500 },
-    { id: 'total_time', duration: 3500 },
+    { id: 'intro', duration: 6000 },
+    { id: 'total_time', duration: 6000 },
+    { id: 'top_games', duration: 6000 },
 ];
 
 export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => {
@@ -120,6 +123,9 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
                 )}
                 {currentSceneIndex === 1 && (
                     <SecondScene stats={stats} isPaused={isPaused} />
+                )}
+                {currentSceneIndex === 2 && (
+                    <ThirdScene stats={stats} isPaused={isPaused} />
                 )}
 
             </AnimatePresence>

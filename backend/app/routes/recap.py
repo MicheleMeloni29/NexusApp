@@ -25,6 +25,15 @@ def _compose_stats(user: User, steam: SteamStats | None, riot: RiotStats | None)
     stats.steam_avatar_url = steam.avatar_url
     stats.steam_profile_level = steam.profile_level
     stats.steam_profile_created_at = steam.profile_created_at
+    raw_games = steam.raw_games or []
+    top_games = sorted(raw_games, key=lambda game: game.get("playtime_forever", 0), reverse=True)
+    stats.steam_top_games = [
+      {
+        "name": game.get("name") or "Unknown",
+        "hours": round((game.get("playtime_forever", 0) or 0) / 60, 1),
+      }
+      for game in top_games[:5]
+    ]
     stats.steam_games_count = steam.games_count
     stats.steam_recent_hours = steam.recent_hours
   if riot:

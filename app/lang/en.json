@@ -104,6 +104,8 @@
     "equivalentDays": "Equivalent days",
     "equivalentMonths": "Equivalent months",
     "gamingTimeCopy": "You spent {{hours}} hours in gaming worlds.",
+    "topGamesTitle": "TOP 5 GAMES",
+    "hoursPlayed": "{{hours}} hours",
     "introTitle": "STEAM PROFILE",
     "profileLevel": "Profile level",
     "profileCreated": "Account created",

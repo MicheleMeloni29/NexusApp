@@ -8,8 +8,60 @@ type FirstSceneProps = {
     isPaused: boolean;
 };
 
-const COUNTER_DURATION = 1600;
-const LEVEL_COUNTER_DURATION = 1200;
+// COUNTER ANNI DI ATTIVITA'
+const COUNTER_DURATION = 2000;
+// COUNTER LIVELLO PROFILO
+const LEVEL_COUNTER_DURATION = 2000;
+
+// EFFETTO ROLLING SUI NUMERI DI ANNI DI ATTIVITA' E LIVELLO PROFILO
+type RollingNumberProps = {
+    value: number;
+    max: number;
+    className?: string;
+};
+
+const RollingNumber: React.FC<RollingNumberProps> = ({ value, max, className }) => {
+    const numbers = useMemo(() => Array.from({ length: max + 1 }, (_, i) => i), [max]);
+    const clampedValue = Math.min(Math.max(value, 0), max);
+    return (
+        <div className={`relative h-[1em] overflow-hidden ${className ?? ''}`}>
+            <div
+                className="flex flex-col leading-none"
+                style={{ transform: `translateY(-${clampedValue}em)` }}
+            >
+                {numbers.map((num) => (
+                    <span key={num} className="h-[1em] leading-none">
+                        {num}
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// ROLLING PER LA DATA CREAZIONE PROFILO
+type RollingTextProps = {
+    items: string[];
+    index: number;
+    className?: string;
+}
+const RollingText: React.FC<RollingTextProps> = ({ items, index, className }) => {
+    const clamped = Math.min(Math.max(index, 0), items.length - 1);
+    return (
+        <div className={`relative h-[1em] overflow-hidden ${className ?? ""}`}>
+            <div
+                className="flex flex-col leading-none transition-transform duration-200"
+                style={{ transform: `translateY(-${clamped}em)` }}
+            >
+                {items.map((item) => (
+                    <span key={item} className="h-[1em] leading-none">
+                        {item}
+                    </span>
+                ))}
+            </div>
+        </div>     
+    );
+};
 
 export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
     const { t, language } = useLanguage();
@@ -17,8 +69,6 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
     const [levelCounter, setLevelCounter] = useState(0);
     const elapsedRef = useRef(0);
     const lastTimestampRef = useRef<number | null>(null);
-    const levelElapsedRef = useRef(0);
-    const levelLastTimestampRef = useRef<number | null>(null);
 
     const nickname = stats.steamPersonaName ?? t('recap.unknownPlayer');
     const avatarUrl = stats.steamAvatarUrl ?? '';
@@ -31,6 +81,28 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
         if (!stats.steamProfileCreatedAt) return null;
         return new Date(stats.steamProfileCreatedAt * 1000);
     }, [stats.steamProfileCreatedAt]);
+
+    // COSTANTI PER L'ANIMAZIONE ROLLINGTEXT, MOSTRA LA DATA DI CREAZIONE DEL PROFILO
+    const days = useMemo(() => Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")), []);
+    const months = useMemo(() => ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"], []);
+    const years = useMemo(() => {
+        const start = 2004;     // ANNO CREAZIONE STEAM
+        const end = new Date().getFullYear();
+        return Array.from({ length: end - start + 1 }, (_, i) => String(start + i));
+    }, []);
+
+    // CALCOLO INDICI TARGET DELLA DATA REALE
+    const dayIndex = profileCreatedAt ? profileCreatedAt.getDate() - 1 : 0;
+    const monthIndex = profileCreatedAt ? profileCreatedAt.getMonth() : 0;
+    const yearIndex = profileCreatedAt ? Math.max(0, profileCreatedAt.getFullYear() - 2004) : 0;
+
+    // ANIMO GLI INDICI CON LO STESSO TIMER (USO GLI STESSI PROGRESS DEI COUNTER)
+    const [dateProgress, setDateProgress] = useState(0);
+
+    // CALCOLO GLI INDICI "ROLLING" CON PROGRESS
+    const dayRollingIndex = Math.floor(dayIndex * dateProgress);
+    const monthRollingIndex = Math.floor(monthIndex * dateProgress);
+    const yearRollingIndex = Math.floor(yearIndex * dateProgress);
     const yearsActive = useMemo(() => {
         if (!profileCreatedAt) return 0;
         const now = new Date();
@@ -43,6 +115,8 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
         }
         return Math.max(0, years);
     }, [profileCreatedAt]);
+    
+    // 
     const createdAtLabel = useMemo(() => {
         if (!profileCreatedAt) return t('recap.unknownDate');
         const locale = language === 'it' ? 'it-IT' : 'en-US';
@@ -57,17 +131,13 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
         elapsedRef.current = 0;
         lastTimestampRef.current = null;
         setYearsCounter(0);
-    }, [profileCreatedAt, yearsActive]);
-
-    useEffect(() => {
-        levelElapsedRef.current = 0;
-        levelLastTimestampRef.current = null;
         setLevelCounter(0);
-    }, [targetLevel]);
+    }, [profileCreatedAt, yearsActive, targetLevel]);
 
     useEffect(() => {
-        if (!profileCreatedAt) {
+        if (!profileCreatedAt && targetLevel === null) {
             setYearsCounter(0);
+            setLevelCounter(0);
             return;
         }
         if (isPaused) {
@@ -84,10 +154,23 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
             lastTimestampRef.current = timestamp;
             elapsedRef.current += delta;
 
-            const progress = Math.min(elapsedRef.current / COUNTER_DURATION, 1);
-            setYearsCounter(Math.floor(yearsActive * progress));
+            const yearsProgress = profileCreatedAt
+                ? Math.min(elapsedRef.current / COUNTER_DURATION, 1)
+                : 0;
+            const levelProgress = targetLevel !== null
+                ? Math.min(elapsedRef.current / LEVEL_COUNTER_DURATION, 1)
+                : 0;
+            const dateProg = Math.min(elapsedRef.current / COUNTER_DURATION, 1);
 
-            if (progress >= 1) {
+            if (profileCreatedAt) {
+                setYearsCounter(yearsActive * yearsProgress);
+            }
+            if (targetLevel !== null) {
+                setLevelCounter(targetLevel * levelProgress);
+            }
+            setDateProgress(dateProg);
+
+            if (yearsProgress >= 1 && levelProgress >= 1 && dateProg >= 1) {
                 return;
             }
             rafId = requestAnimationFrame(tick);
@@ -95,39 +178,7 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isPaused, profileCreatedAt, yearsActive]);
-
-    useEffect(() => {
-        if (targetLevel === null) {
-            setLevelCounter(0);
-            return;
-        }
-        if (isPaused) {
-            levelLastTimestampRef.current = null;
-            return;
-        }
-
-        let rafId = 0;
-        const tick = (timestamp: number) => {
-            if (levelLastTimestampRef.current === null) {
-                levelLastTimestampRef.current = timestamp;
-            }
-            const delta = timestamp - levelLastTimestampRef.current;
-            levelLastTimestampRef.current = timestamp;
-            levelElapsedRef.current += delta;
-
-            const progress = Math.min(levelElapsedRef.current / LEVEL_COUNTER_DURATION, 1);
-            setLevelCounter(Math.floor(targetLevel * progress));
-
-            if (progress >= 1) {
-                return;
-            }
-            rafId = requestAnimationFrame(tick);
-        };
-
-        rafId = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(rafId);
-    }, [isPaused, targetLevel]);
+    }, [isPaused, profileCreatedAt, targetLevel, yearsActive]);
 
     return (
         <motion.div
@@ -139,6 +190,9 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
         >
             <div className="absolute inset-0 bg-[var(--background)]" />
             <div className="relative z-10 flex w-full max-w-4xl flex-col items-center gap-8 px-6 text-center">
+                <p className="text-base uppercase tracking-[0.4em] text-[var(--brand-purple)]">
+                    {t('recap.introTitle')}
+                </p>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.85 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -158,9 +212,6 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
                     )}
                 </motion.div>
                 <div className="space-y-6 text-center">
-                    <p className="text-xs uppercase tracking-[0.4em] text-[rgba(var(--foreground-rgb),0.6)]">
-                        {t('recap.introTitle')}
-                    </p>
                     <div className="relative inline-block">
                         <span className="relative z-10 text-4xl md:text-6xl font-black tracking-tight text-[var(--foreground)]">
                             {nickname}
@@ -186,27 +237,37 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
                             <p className="text-xs uppercase tracking-widest text-[var(--brand-purple)]">
                                 {t('recap.profileLevel')}
                             </p>
-                            <p className="mt-2 text-2xl font-bold text-[var(--brand-green)] tabular-nums">
-                                {targetLevel === null ? '--' : levelCounter}
-                            </p>
+                            <div className="mt-2 text-2xl font-bold text-[var(--brand-green)] tabular-nums">
+                                {targetLevel === null ? (
+                                    '--'
+                                ) : (
+                                    <RollingNumber value={levelCounter} max={targetLevel} />
+                                )}
+                            </div>
                         </div>
                         {/* DATA CREAZIONE ACCOUNT */}
                         <div className="rounded-2xl border-2 border-[rgba(var(--brand-purple-rgb),0.4)] bg-[rgba(var(--foreground-rgb),0.06)] px-4 py-4">
                             <p className="text-xs uppercase tracking-widest text-[var(--brand-purple)]">
                                 {t('recap.profileCreated')}
                             </p>
-                            <p className="mt-2 text-lg font-semibold text-[var(--brand-green)]">
-                                {createdAtLabel}
-                            </p>
+                            <div className="mt-2 text-lg font-semibold text-[var(--brand-green)] flex items-center justify-center gap-2">
+                                <RollingText items={days} index={dayRollingIndex} />
+                                <RollingText items={months} index={monthRollingIndex} />
+                                <RollingText items={years} index={yearRollingIndex} />
+                            </div>
                         </div>
                         {/* ANNI DI ATTIVITA' */}
                         <div className="rounded-2xl border-2 border-[rgba(var(--brand-purple-rgb),0.4)] bg-[rgba(var(--foreground-rgb),0.06)] px-4 py-4">
                             <p className="text-xs uppercase tracking-widest text-[var(--brand-purple)]">
                                 {t('recap.yearsActive')}
                             </p>
-                            <p className="mt-2 text-2xl font-bold text-[var(--brand-green)] tabular-nums">
-                                {profileCreatedAt ? yearsCounter : '--'}
-                            </p>
+                            <div className="mt-2 text-2xl font-bold text-[var(--brand-green)] tabular-nums">
+                                {profileCreatedAt ? (
+                                    <RollingNumber value={yearsCounter} max={yearsActive} />
+                                ) : (
+                                    '--'
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
