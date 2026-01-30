@@ -9,6 +9,8 @@ export interface UserStats {
   steamProfileLevel: number | null;
   steamProfileCreatedAt: number | null;
   steamTopGames: { name: string; hours: number }[];
+  steamRareAchievements: { game: string; name: string; percent: number }[];
+  steamCompletedGames: { name: string; appid: number; hours: number }[];
   steamGamesCount: number;
   steamRecentHours: number;
   riotRank: string | null;

@@ -51,12 +51,15 @@ class SteamStats(SQLModel, table=True):
   total_hours: float = 0
   games_count: int = 0
   recent_hours: float = 0
+  longest_session: int = 0
   top_game: Optional[str] = None
   last_played_game: Optional[str] = None
   persona_name: Optional[str] = None
   avatar_url: Optional[str] = None
   profile_level: Optional[int] = None
   profile_created_at: Optional[int] = None
+  rare_achievements: Optional[list] = Field(default=None, sa_column=Column(JSON))
+  completed_games: Optional[list] = Field(default=None, sa_column=Column(JSON))
   last_synced_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
   raw_games: Optional[list] = Field(default=None, sa_column=Column(JSON))
 
@@ -71,5 +74,10 @@ class RiotStats(SQLModel, table=True):
   favorite_champion: Optional[str] = None
   matches_tracked: int = 0
   win_rate: float = 0
+  riot_account_name: Optional[str] = None
+  riot_profile_level: Optional[int] = None
+  riot_profile_icon_id: Optional[int] = None
+  riot_first_match_timestamp: Optional[int] = None
+  riot_years_active: Optional[int] = None
   last_synced_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
   raw_matches: Optional[dict] = Field(default=None, sa_column=Column(JSON))

@@ -59,6 +59,8 @@ export async function fetchRecap(userId: number = DEFAULT_USER_ID): Promise<User
     steamProfileLevel: payload.steam_profile_level ?? null,
     steamProfileCreatedAt: payload.steam_profile_created_at ?? null,
     steamTopGames: Array.isArray(payload.steam_top_games) ? payload.steam_top_games : [],
+    steamRareAchievements: Array.isArray(payload.steam_rare_achievements) ? payload.steam_rare_achievements : [],
+    steamCompletedGames: Array.isArray(payload.steam_completed_games) ? payload.steam_completed_games : [],
     steamGamesCount: payload.steam_games_count ?? 0,
     steamRecentHours: payload.steam_recent_hours ?? 0,
     riotRank: payload.riot_rank ?? null,

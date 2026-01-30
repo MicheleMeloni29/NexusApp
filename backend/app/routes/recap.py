@@ -20,7 +20,7 @@ def _compose_stats(user: User, steam: SteamStats | None, riot: RiotStats | None)
   if steam:
     stats.top_game = steam.top_game
     stats.total_hours = steam.total_hours
-    stats.longest_session = max(int(steam.recent_hours // 2), 0)
+    stats.longest_session = max(int(steam.longest_session or 0), 0)
     stats.steam_persona_name = steam.persona_name
     stats.steam_avatar_url = steam.avatar_url
     stats.steam_profile_level = steam.profile_level
@@ -36,6 +36,8 @@ def _compose_stats(user: User, steam: SteamStats | None, riot: RiotStats | None)
     ]
     stats.steam_games_count = steam.games_count
     stats.steam_recent_hours = steam.recent_hours
+    stats.steam_rare_achievements = steam.rare_achievements or []
+    stats.steam_completed_games = steam.completed_games or []
   if riot:
     stats.riot_rank = riot.rank
     stats.riot_wins = riot.wins
@@ -43,6 +45,11 @@ def _compose_stats(user: User, steam: SteamStats | None, riot: RiotStats | None)
     stats.riot_favorite = riot.favorite_champion
     stats.riot_win_rate = riot.win_rate
     stats.playstyle = riot.favorite_champion or stats.playstyle
+    stats.riot_account_name = riot.riot_account_name
+    stats.riot_profile_level = riot.riot_profile_level
+    stats.riot_profile_icon_id = riot.riot_profile_icon_id
+    stats.riot_first_match_timestamp = riot.riot_first_match_timestamp
+    stats.riot_years_active = riot.riot_years_active
   return stats
 
 

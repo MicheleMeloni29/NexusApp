@@ -120,6 +120,11 @@ def _upsert_stats(session: Session, user: User, summary: Dict[str, Any]) -> Riot
     "matches": summary["match_ids"],
   }
   stats.last_synced_at = datetime.utcnow()
+  stats.riot_account_name = summary["account"]["name"]
+  stats.riot_profile_level = summary["profile"]["level"]
+  stats.riot_profile_icon_id = summary["profile"]["icon_id"]
+  stats.riot_first_match_timestamp = summary["first_match_timestamp"]
+  stats.riot_years_active = summary["years_active"]
 
   session.commit()
   session.refresh(stats)
@@ -140,6 +145,17 @@ def _build_mock_summary(puuid: str) -> Dict[str, Any]:
       "win_rate": 58.33,
     },
     "match_ids": [f"DEV_MATCH_{index + 1}_{puuid[:6]}" for index in range(5)],
+    "account": {
+      "name": "DevUser#EUW",
+      "game_name": "DevUser",
+      "tag_line": "EUW",
+    },
+    "profile": {
+      "level": 123,
+      "icon_id": 456,
+    },
+    "first_match_timestamp": int((datetime.utcnow() - timedelta(days=365 * 5)).timestamp()),
+    "years_active": 5,
   }
 
 
@@ -158,10 +174,125 @@ async def sync_user(session: Session, user: User) -> RiotStats:
   entries = await _fetch_league_entries(summoner["id"])
   match_ids = await _fetch_match_ids(user.riot_puuid)
   matches_summary = await _summarize_matches(user.riot_puuid, match_ids)
+  account = await _fetch_account_by_puuid(user.riot_puuid)
+
+  lol_match_ids = await _fetch_match_ids(user.riot_puuid, count=100)
+  tft_match_ids = await _fetch_tft_match_ids(user.riot_puuid, count=100)
+  lor_match_ids = await _fetch_lor_match_ids(user.riot_puuid, count=100)
+  val_match_ids = await _fetch_val_match_ids(user.riot_puuid, count=100)
+
+  lol_ts = await _oldest_match_timestamp(lol_match_ids, _fetch_match, _extract_lol_ts)
+  tft_ts = await _oldest_match_timestamp(tft_match_ids, _fetch_tft_match, _extract_tft_ts)
+  lor_ts = await _oldest_match_timestamp(lor_match_ids, _fetch_lor_match, _extract_lor_ts)
+  val_ts = await _oldest_match_timestamp(val_match_ids, _fetch_val_match, _extract_val_ts)
+
+  timestamps = []
+  for ts in (lol_ts, tft_ts, lor_ts, val_ts):
+    nts = _normalize_timestamp(ts)
+    if nts:
+      timestamps.append(nts)
+
+  first_match_ts = min(timestamps) if timestamps else None
+  years_active = None
+  if first_match_ts:
+    created_at = datetime.utcfromtimestamp(first_match_ts)
+    years_active = int((datetime.utcnow() - created_at).days / 365.25)
+
+  riot_name = None
+  game_name = account.get("gameName")
+  tag_line = account.get("tagLine")
+  if game_name and tag_line:
+    riot_name = f"{game_name}#{tag_line}"
+
 
   summary = {
     "league": _summarize_league(entries),
     "matches": matches_summary,
     "match_ids": match_ids[:20],
+    "account": {
+      "name": riot_name,
+      "game_name": game_name,
+      "tag_line": tag_line,
+    },
+    "profile": {
+      "level": summoner.get("summonerLevel"),
+      "icon_id": summoner.get("profileIconId"),
+    },
+    "first_match_timestamp": first_match_ts,
+    "years_active": years_active,
   }
   return _upsert_stats(session, user, summary)
+
+
+async def _fetch_account_by_puuid(puuid: str) -> Dict[str, Any]:
+  url = f"https://{settings.riot_match_region}.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
+  return await _get_json(url, headers=_riot_headers())
+
+async def _fetch_tft_match_ids(puuid: str, count: int = 10) -> List[str]:
+   params = {"start": 0, "count": count}
+   url = f"https://{settings.riot_match_region}.api.riotgames.com/tft/match/v1/matches/by-puuid/{puuid}/ids"
+   data = await _get_json(url, headers=_riot_headers(), params=params)
+   return data if isinstance(data, list) else []
+
+async def _fetch_lor_match_ids(puuid: str, count: int = 10) -> List[str]:
+  params = {"start": 0, "count": count}
+  url = f"https://{settings.riot_match_region}.api.riotgames.com/lor/match/v1/matches/by-puuid/{puuid}/ids"
+  data = await _get_json(url, headers=_riot_headers(), params=params)
+  return data if isinstance(data, list) else []
+
+
+async def _fetch_val_match_ids(puuid: str, count: int = 10) -> List[str]:
+  params = {"start": 0, "count": count}
+  url = f"https://{settings.riot_region}.api.riotgames.com/val/match/v1/matchlists/by-puuid/{puuid}"
+  data = await _get_json(url, headers=_riot_headers(), params=params)
+  history = data.get("history", []) if isinstance(data, dict) else []
+  return [item.get("matchId") for item in history if item.get("matchId")][:count]
+
+
+async def _fetch_tft_match(match_id: str) -> Dict[str, Any]:
+  url = f"https://{settings.riot_match_region}.api.riotgames.com/tft/match/v1/matches/{match_id}"
+  return await _get_json(url, headers=_riot_headers())
+
+
+async def _fetch_lor_match(match_id: str) -> Dict[str, Any]:
+  url = f"https://{settings.riot_match_region}.api.riotgames.com/lor/match/v1/matches/{match_id}"
+  return await _get_json(url, headers=_riot_headers())
+
+
+async def _fetch_val_match(match_id: str) -> Dict[str, Any]:
+  url = f"https://{settings.riot_region}.api.riotgames.com/val/match/v1/matches/{match_id}"
+  return await _get_json(url, headers=_riot_headers())
+
+
+def _normalize_timestamp(ts: Optional[int]) -> Optional[int]:
+  if ts is None:
+    return None
+  return int(ts / 1000) if ts > 10**12 else int(ts)
+
+
+def _extract_lol_ts(data: Dict[str, Any]) -> Optional[int]:
+  info = data.get("info", {})
+  return info.get("gameStartTimestamp")
+
+
+def _extract_tft_ts(data: Dict[str, Any]) -> Optional[int]:
+  info = data.get("info", {})
+  return info.get("game_datetime") or info.get("gameDatetime") or info.get("gameStartTimestamp")
+
+
+def _extract_lor_ts(data: Dict[str, Any]) -> Optional[int]:
+  info = data.get("info", {})
+  return info.get("gameStartTimeMillis") or info.get("gameStartTime") or info.get("gameStartTimestamp")
+
+
+def _extract_val_ts(data: Dict[str, Any]) -> Optional[int]:
+  info = data.get("info", {})
+  return info.get("gameStartTimeMillis") or info.get("gameStartTime") or info.get("gameStartTimestamp")
+
+
+async def _oldest_match_timestamp(match_ids: List[str], fetch_match_fn, extract_ts_fn) -> Optional[int]:
+  if not match_ids:
+    return None
+  oldest_id = match_ids[-1]
+  data = await fetch_match_fn(oldest_id)
+  return extract_ts_fn(data) 

@@ -6,6 +6,7 @@ import { useLanguage } from '@/app/components/LanguageProvider';
 import { FirstScene } from '@/app/components/videorecapScene/FirstScene';
 import { SecondScene } from '@/app/components/videorecapScene/SecondScene';
 import { ThirdScene } from '@/app/components/videorecapScene/ThirdScene';
+import { FourthScene } from '@/app/components/videorecapScene/FourthScene';
 
 interface VideoRecapProps {
     onComplete: () => void;
@@ -17,6 +18,7 @@ const scenes = [
     { id: 'intro', duration: 6000 },
     { id: 'total_time', duration: 6000 },
     { id: 'top_games', duration: 6000 },
+    { id: 'steam_highlights', duration: 6000 },
 ];
 
 export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => {
@@ -126,6 +128,9 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
                 )}
                 {currentSceneIndex === 2 && (
                     <ThirdScene stats={stats} isPaused={isPaused} />
+                )}
+                {currentSceneIndex === 3 && (
+                    <FourthScene stats={stats} isPaused={isPaused} />
                 )}
 
             </AnimatePresence>
