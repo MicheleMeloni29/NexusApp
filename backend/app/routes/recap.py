@@ -36,6 +36,7 @@ def _compose_stats(user: User, steam: SteamStats | None, riot: RiotStats | None)
     ]
     stats.steam_games_count = steam.games_count
     stats.steam_recent_hours = steam.recent_hours
+    stats.steam_achievements = steam.achievements or []
     stats.steam_rare_achievements = steam.rare_achievements or []
     stats.steam_completed_games = steam.completed_games or []
   if riot:

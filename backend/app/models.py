@@ -58,6 +58,7 @@ class SteamStats(SQLModel, table=True):
   avatar_url: Optional[str] = None
   profile_level: Optional[int] = None
   profile_created_at: Optional[int] = None
+  achievements: Optional[list] = Field(default=None, sa_column=Column(JSON))
   rare_achievements: Optional[list] = Field(default=None, sa_column=Column(JSON))
   completed_games: Optional[list] = Field(default=None, sa_column=Column(JSON))
   last_synced_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)

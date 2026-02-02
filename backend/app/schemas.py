@@ -9,7 +9,7 @@ class SteamTopGame(BaseModel):
 class SteamAchievement(BaseModel):
   game: str
   name: str
-  percent: float
+  percent: float | None = None
 
 
 class SteamCompletedGame(BaseModel):
@@ -29,6 +29,7 @@ class UserStats(BaseModel):
   steam_profile_level: int | None = None
   steam_profile_created_at: int | None = None
   steam_top_games: list[SteamTopGame] = []
+  steam_achievements: list[SteamAchievement] = []
   steam_rare_achievements: list[SteamAchievement] = []
   steam_completed_games: list[SteamCompletedGame] = []
   steam_games_count: int = 0

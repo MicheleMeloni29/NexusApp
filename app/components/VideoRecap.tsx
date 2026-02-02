@@ -7,6 +7,7 @@ import { FirstScene } from '@/app/components/videorecapScene/FirstScene';
 import { SecondScene } from '@/app/components/videorecapScene/SecondScene';
 import { ThirdScene } from '@/app/components/videorecapScene/ThirdScene';
 import { FourthScene } from '@/app/components/videorecapScene/FourthScene';
+import { FifthScene } from '@/app/components/videorecapScene/FifthScene';
 
 interface VideoRecapProps {
     onComplete: () => void;
@@ -19,6 +20,7 @@ const scenes = [
     { id: 'total_time', duration: 6000 },
     { id: 'top_games', duration: 6000 },
     { id: 'steam_highlights', duration: 6000 },
+    { id: 'steam_trophies', duration: 6000 },
 ];
 
 export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => {
@@ -76,7 +78,7 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
     const currentScene = scenes[currentSceneIndex];
 
     return (
-        <div className="fixed inset-0 text-[var(--foreground)] z-50 flex flex-col items-center justify-center overflow-hidden">
+        <div className="fixed inset-0 bg-[var(--background)] text-[var(--foreground)] z-50 flex flex-col items-center justify-center overflow-hidden">
             {/* Pause Button */}
             <button
                 onClick={() => setIsPaused(prev => !prev)}
@@ -131,6 +133,9 @@ export const VideoRecap: React.FC<VideoRecapProps> = ({ onComplete, stats }) => 
                 )}
                 {currentSceneIndex === 3 && (
                     <FourthScene stats={stats} isPaused={isPaused} />
+                )}
+                {currentSceneIndex === 4 && (
+                    <FifthScene stats={stats} isPaused={isPaused} />
                 )}
 
             </AnimatePresence>

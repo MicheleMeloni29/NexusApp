@@ -12,7 +12,7 @@ from ..models import SteamStats, User
 settings = get_settings()
 STEAM_API_BASE = "https://api.steampowered.com"
 RARE_ACHIEVEMENT_THRESHOLD = 10.0
-ACHIEVEMENT_GAME_LIMIT = 5
+ACHIEVEMENT_GAME_LIMIT = 20
 
 
 def _require_steam_key() -> str:
@@ -109,7 +109,7 @@ async def _fetch_global_achievement_percentages(appid: int) -> Optional[Dict[str
 
 async def _summarize_achievements(steam_id: str, games: List[Dict[str, Any]]) -> Dict[str, Any]:
   if not games:
-    return {"rare_achievements": [], "completed_games": []}
+    return {"achievements": [], "rare_achievements": [], "completed_games": []}
 
   ranked_games = sorted(games, key=lambda g: g.get("playtime_forever", 0), reverse=True)
   candidates = ranked_games[:ACHIEVEMENT_GAME_LIMIT]
@@ -118,24 +118,30 @@ async def _summarize_achievements(steam_id: str, games: List[Dict[str, Any]]) ->
   async def _process_game(game: Dict[str, Any]) -> Dict[str, Any]:
     appid = game.get("appid")
     if not appid:
-      return {"rare": [], "completed": None}
+      return {"achievements": [], "rare": [], "completed": None}
     async with semaphore:
       player_achievements = await _fetch_player_achievements(steam_id, appid)
       global_percentages = await _fetch_global_achievement_percentages(appid)
-    if not player_achievements or not global_percentages:
-      return {"rare": [], "completed": None}
+    if not player_achievements:
+      return {"achievements": [], "rare": [], "completed": None}
 
+    global_percentages = global_percentages or {}
+    achievements: List[Dict[str, Any]] = []
     rare: List[Dict[str, Any]] = []
     achieved = [ach for ach in player_achievements if ach.get("achieved") == 1]
     for ach in achieved:
       name = ach.get("name")
       percent = global_percentages.get(name)
-      if name and percent is not None and percent <= RARE_ACHIEVEMENT_THRESHOLD:
-        rare.append({
-          "game": game.get("name") or "Unknown",
-          "name": name,
-          "percent": round(percent, 2),
-        })
+      if not name:
+        continue
+      entry = {
+        "game": game.get("name") or "Unknown",
+        "name": name,
+        "percent": round(percent, 2) if percent is not None else None,
+      }
+      achievements.append(entry)
+      if percent is not None and percent <= RARE_ACHIEVEMENT_THRESHOLD:
+        rare.append(entry)
 
     completed = None
     if player_achievements and len(achieved) == len(player_achievements):
@@ -145,21 +151,25 @@ async def _summarize_achievements(steam_id: str, games: List[Dict[str, Any]]) ->
         "hours": round((game.get("playtime_forever", 0) or 0) / 60, 1),
       }
 
-    return {"rare": rare, "completed": completed}
+    return {"achievements": achievements, "rare": rare, "completed": completed}
 
   results = await asyncio.gather(*[_process_game(game) for game in candidates])
+  achievements: List[Dict[str, Any]] = []
   rare_achievements: List[Dict[str, Any]] = []
   completed_games: List[Dict[str, Any]] = []
 
   for result in results:
+    achievements.extend(result["achievements"])
     rare_achievements.extend(result["rare"])
     if result["completed"]:
       completed_games.append(result["completed"])
 
+  achievements = sorted(achievements, key=lambda item: item["percent"])
   rare_achievements = sorted(rare_achievements, key=lambda item: item["percent"])[:5]
   completed_games = completed_games[:5]
 
   return {
+    "achievements": achievements,
     "rare_achievements": rare_achievements,
     "completed_games": completed_games,
   }
@@ -221,6 +231,7 @@ def _upsert_stats(session: Session, user: User, summary: Dict[str, Any]) -> Stea
   stats.profile_level = summary.get("profile_level")
   stats.profile_created_at = summary.get("profile_created_at")
   stats.raw_games = summary["raw_games"]
+  stats.achievements = summary.get("achievements")
   stats.rare_achievements = summary.get("rare_achievements")
   stats.completed_games = summary.get("completed_games")
   stats.last_synced_at = datetime.utcnow()
