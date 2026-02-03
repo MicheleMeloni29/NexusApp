@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
   session_ttl_days: int = 30
   email_verification_ttl_hours: int = 24
+  session_cookie_samesite: str = "lax"
+  session_cookie_secure: bool = False
 
   smtp_host: Optional[str] = None
   smtp_port: int = 587

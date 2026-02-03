@@ -101,14 +101,27 @@ def _create_session(session: Session, user: User) -> str:
   return token
 
 
+def _session_cookie_policy() -> tuple[str, bool]:
+  samesite = (settings.session_cookie_samesite or "lax").lower()
+  if samesite not in ("lax", "strict", "none"):
+    samesite = "lax"
+  secure = bool(settings.session_cookie_secure)
+  if samesite == "none":
+    secure = True
+  return samesite, secure
+
+
+
 def _set_session_cookie(response: Response, token: str) -> None:
   max_age = settings.session_ttl_days * 24 * 60 * 60
+  samesite, secure = _session_cookie_policy()
   response.set_cookie(
     key=SESSION_COOKIE_NAME,
     value=token,
     max_age=max_age,
     httponly=True,
-    samesite="lax",
+    samesite=samesite,
+    secure=secure,
   )
 
 
