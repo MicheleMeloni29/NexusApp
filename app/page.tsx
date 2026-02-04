@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FiSun, FiMoon } from "react-icons/fi";
 import ParticlesBackground from "./components/ParticlesBackground";
 import LoginCard from "./components/LoginCard";
-import FuzzyText from "@/components/FuzzyText";
+import FuzzyText from "@/app/components/UI/FuzzyText";
 import { useLanguage } from "@/app/components/LanguageProvider";
 
 export default function Home() {
