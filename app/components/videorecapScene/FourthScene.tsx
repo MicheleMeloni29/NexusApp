@@ -10,6 +10,14 @@ type FourthSceneProps = {
 
 const ANIMATION_DURATION = 4000;
 
+const formatPercent = (value: number | null | undefined) => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+        return "--";
+    }
+    const rounded = Number.isInteger(value) ? value.toFixed(0) : value.toFixed(2);
+    return `${rounded}%`;
+};
+
 export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => {
     const { t } = useLanguage();
     const [hoursCounter, setHoursCounter] = useState(0);
@@ -18,7 +26,7 @@ export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => 
     const elapsedRef = useRef(0);
     const lastTimestampRef = useRef<number | null>(null);
 
-    const longestSession = Math.max(0, Math.round(stats.longestSession ?? 0));
+    const recentHours = Math.max(0, Math.round(stats.steamRecentHours ?? 0));
     const rareAchievements = useMemo(() => {
         return [...(stats.steamRareAchievements ?? [])]
             .filter((item) => item?.name)
@@ -38,7 +46,7 @@ export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => 
         setHoursCounter(0);
         setRareRevealCount(0);
         setCompletedRevealCount(0);
-    }, [longestSession, rareAchievements.length, completedGames.length]);
+    }, [recentHours, rareAchievements.length, completedGames.length]);
 
     useEffect(() => {
         if (isPaused) {
@@ -56,12 +64,12 @@ export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => 
             elapsedRef.current += delta;
 
             const progress = Math.min(elapsedRef.current / ANIMATION_DURATION, 1);
-            setHoursCounter(Math.floor(longestSession * progress));
+            setHoursCounter(Math.floor(recentHours * progress));
             setRareRevealCount(Math.min(rareAchievements.length, Math.floor(progress * rareAchievements.length)));
             setCompletedRevealCount(Math.min(completedGames.length, Math.floor(progress * completedGames.length)));
 
             if (progress >= 1) {
-                setHoursCounter(longestSession);
+                setHoursCounter(recentHours);
                 setRareRevealCount(rareAchievements.length);
                 setCompletedRevealCount(completedGames.length);
                 return;
@@ -71,7 +79,7 @@ export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => 
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isPaused, longestSession, rareAchievements.length, completedGames.length]);
+    }, [isPaused, recentHours, rareAchievements.length, completedGames.length]);
 
     return (
         <motion.div
@@ -90,10 +98,10 @@ export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => 
                 <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="rounded-2xl border-2 border-[rgba(var(--brand-purple-rgb),0.4)] bg-[rgba(var(--foreground-rgb),0.06)] px-4 py-5 text-center">
                         <p className="text-xs uppercase tracking-widest text-[var(--brand-purple)]">
-                            {t('recap.longestSession')}
+                            {t('recap.recentHoursTitle')}
                         </p>
                         <p className="mt-3 text-4xl font-black text-[var(--brand-green)] tabular-nums">
-                            {longestSession ? hoursCounter : 0}
+                            {recentHours ? hoursCounter : 0}
                         </p>
                         <p className="text-xs uppercase tracking-[0.3em] text-[var(--brand-green)]">
                             {t('recap.hours')}
@@ -123,7 +131,7 @@ export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => 
                                             {achievement.name}
                                         </p>
                                         <p className="text-xs text-[rgba(var(--foreground-rgb),0.6)]">
-                                            {achievement.game} • {achievement.percent}%
+                                            {achievement.game} • {formatPercent(achievement.percent)}
                                         </p>
                                     </div>
                                 );

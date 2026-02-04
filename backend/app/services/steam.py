@@ -134,13 +134,19 @@ async def _summarize_achievements(steam_id: str, games: List[Dict[str, Any]]) ->
       percent = global_percentages.get(name)
       if not name:
         continue
+      percent_value = None
+      if percent is not None:
+        try:
+          percent_value = round(float(percent), 2)
+        except (TypeError, ValueError):
+          percent_value = None
       entry = {
         "game": game.get("name") or "Unknown",
         "name": name,
-        "percent": round(percent, 2) if percent is not None else None,
+        "percent": percent_value,
       }
       achievements.append(entry)
-      if percent is not None and percent <= RARE_ACHIEVEMENT_THRESHOLD:
+      if percent_value is not None and percent_value <= RARE_ACHIEVEMENT_THRESHOLD:
         rare.append(entry)
 
     completed = None

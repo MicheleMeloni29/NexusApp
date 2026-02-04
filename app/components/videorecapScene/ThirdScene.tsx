@@ -103,7 +103,7 @@ export const ThirdScene: React.FC<ThirdSceneProps> = ({ stats, isPaused }) => {
                                             src={coverUrl}
                                             alt={game.name}
                                             loading="lazy"
-                                            className="h-10 w-[72px] rounded-lg border border-[rgba(var(--foreground-rgb),0.2)] object-cover"
+                                            className="h-10 w-18 rounded-lg border border-[rgba(var(--foreground-rgb),0.2)] object-cover"
                                         />
                                     ) : (
                                         <div className="h-10 w-[72px] rounded-lg border border-[rgba(var(--foreground-rgb),0.2)] bg-[rgba(var(--foreground-rgb),0.05)]" />
