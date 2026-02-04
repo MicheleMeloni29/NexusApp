@@ -58,7 +58,13 @@ export async function fetchRecap(userId: number = DEFAULT_USER_ID): Promise<User
     steamAvatarUrl: payload.steam_avatar_url ?? null,
     steamProfileLevel: payload.steam_profile_level ?? null,
     steamProfileCreatedAt: payload.steam_profile_created_at ?? null,
-    steamTopGames: Array.isArray(payload.steam_top_games) ? payload.steam_top_games : [],
+    steamTopGames: Array.isArray(payload.steam_top_games)
+      ? payload.steam_top_games.map((game: { name?: string; hours?: number; appid?: number | null }) => ({
+          name: game?.name ?? "Unknown",
+          hours: typeof game?.hours === "number" ? game.hours : 0,
+          appid: game?.appid ?? null,
+        }))
+      : [],
     steamAchievements: Array.isArray(payload.steam_achievements) ? payload.steam_achievements : [],
     steamRareAchievements: Array.isArray(payload.steam_rare_achievements) ? payload.steam_rare_achievements : [],
     steamCompletedGames: Array.isArray(payload.steam_completed_games) ? payload.steam_completed_games : [],

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class SteamTopGame(BaseModel):
   name: str
   hours: float
+  appid: int | None = None
 
 
 class SteamAchievement(BaseModel):

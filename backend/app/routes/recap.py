@@ -30,6 +30,7 @@ def _compose_stats(user: User, steam: SteamStats | None, riot: RiotStats | None)
     stats.steam_top_games = [
       {
         "name": game.get("name") or "Unknown",
+        "appid": int(game.get("appid")) if game.get("appid") is not None else None,
         "hours": round((game.get("playtime_forever", 0) or 0) / 60, 1),
       }
       for game in top_games[:5]

@@ -9,6 +9,12 @@ type ThirdSceneProps = {
 };
 
 const ANIMATION_DURATION = 4000;
+const STEAM_COVER_BASE = "https://cdn.cloudflare.steamstatic.com/steam/apps";
+
+const buildSteamCoverUrl = (appid?: number | null) => {
+    if (!appid) return null;
+    return `${STEAM_COVER_BASE}/${appid}/header.jpg`;
+};
 
 export const ThirdScene: React.FC<ThirdSceneProps> = ({ stats, isPaused }) => {
     const { t } = useLanguage();
@@ -80,6 +86,7 @@ export const ThirdScene: React.FC<ThirdSceneProps> = ({ stats, isPaused }) => {
                 <div className="w-full max-w-xl space-y-3">
                     {topGames.map((game, index) => {
                         const isVisible = index >= topGames.length - revealCount;
+                        const coverUrl = buildSteamCoverUrl(game.appid);
                         return (
                             <div
                                 key={`${game.name}-${index}`}
@@ -87,8 +94,20 @@ export const ThirdScene: React.FC<ThirdSceneProps> = ({ stats, isPaused }) => {
                                     isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                                 }`}
                             >
-                                <div className="text-sm uppercase tracking-[0.25em] text-[var(--brand-purple)]">
-                                    #{index + 1}
+                                <div className="flex items-center gap-4">
+                                    <div className="text-sm uppercase tracking-[0.25em] text-[var(--brand-purple)]">
+                                        #{index + 1}
+                                    </div>
+                                    {coverUrl ? (
+                                        <img
+                                            src={coverUrl}
+                                            alt={game.name}
+                                            loading="lazy"
+                                            className="h-10 w-[72px] rounded-lg border border-[rgba(var(--foreground-rgb),0.2)] object-cover"
+                                        />
+                                    ) : (
+                                        <div className="h-10 w-[72px] rounded-lg border border-[rgba(var(--foreground-rgb),0.2)] bg-[rgba(var(--foreground-rgb),0.05)]" />
+                                    )}
                                 </div>
                                 <div className="flex-1 px-4 text-[var(--foreground)] font-semibold">
                                     {game.name}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FiMenu, FiMoon, FiSlash, FiSun } from "react-icons/fi";
 import { VideoRecap } from "@/app/components/VideoRecap";
-import FuzzyText from "@/components/FuzzyText";
+import FuzzyText from "@/app/components/UI/FuzzyText";
 import type { UserStats } from "@/app/types";
 import {
   buildProviderLoginUrl,
