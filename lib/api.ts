@@ -65,6 +65,12 @@ export async function fetchRecap(userId: number = DEFAULT_USER_ID): Promise<User
           appid: game?.appid ?? null,
         }))
       : [],
+    steamTopGenres: Array.isArray(payload.steam_top_genres)
+      ? payload.steam_top_genres.map((genre: { name?: string; percent?: number }) => ({
+          name: genre?.name ?? "Unknown",
+          percent: typeof genre?.percent === "number" ? genre.percent : 0,
+        }))
+      : [],
     steamAchievements: Array.isArray(payload.steam_achievements) ? payload.steam_achievements : [],
     steamRareAchievements: Array.isArray(payload.steam_rare_achievements) ? payload.steam_rare_achievements : [],
     steamCompletedGames: Array.isArray(payload.steam_completed_games) ? payload.steam_completed_games : [],

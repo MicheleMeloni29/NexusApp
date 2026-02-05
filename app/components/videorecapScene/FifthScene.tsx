@@ -155,26 +155,6 @@ export const FifthScene: React.FC<FifthSceneProps> = ({ stats, isPaused }) => {
                                             {tier.trophies.length} {t('recap.trophiesLabel')}
                                         </p>
                                     </div>
-                                    <div className="mt-3 space-y-2">
-                                        {list.map((trophy, trophyIndex) => (
-                                            <div
-                                                key={`${tier.id}-${trophy.name}-${trophyIndex}`}
-                                                className="rounded-xl border border-[rgba(var(--brand-purple-rgb),0.3)] px-3 py-2"
-                                            >
-                                                <p className="text-[var(--foreground)] text-sm font-semibold">
-                                                    {trophy.name}
-                                                </p>
-                                                <p className="text-xs text-[rgba(var(--foreground-rgb),0.6)]">
-                                                    {trophy.game || t('recap.unknownGame')} • {formatPercent(trophy.percent)}
-                                                </p>
-                                            </div>
-                                        ))}
-                                        {remaining > 0 && (
-                                            <p className="text-xs text-[rgba(var(--foreground-rgb),0.6)]">
-                                                {t('recap.moreTrophies', { count: remaining })}
-                                            </p>
-                                        )}
-                                    </div>
                                 </div>
                             );
                         })}

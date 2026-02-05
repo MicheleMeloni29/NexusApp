@@ -19,6 +19,11 @@ class SteamCompletedGame(BaseModel):
   hours: float
 
 
+class SteamTopGenre(BaseModel):
+  name: str
+  percent: float
+
+
 class UserStats(BaseModel):
   year: int = 2024
   top_game: str | None = None
@@ -30,6 +35,7 @@ class UserStats(BaseModel):
   steam_profile_level: int | None = None
   steam_profile_created_at: int | None = None
   steam_top_games: list[SteamTopGame] = []
+  steam_top_genres: list[SteamTopGenre] = []
   steam_achievements: list[SteamAchievement] = []
   steam_rare_achievements: list[SteamAchievement] = []
   steam_completed_games: list[SteamCompletedGame] = []

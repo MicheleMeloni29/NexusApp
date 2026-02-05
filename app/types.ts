@@ -9,6 +9,7 @@ export interface UserStats {
   steamProfileLevel: number | null;
   steamProfileCreatedAt: number | null;
   steamTopGames: { name: string; hours: number; appid?: number | null }[];
+  steamTopGenres: { name: string; percent: number }[];
   steamAchievements: { game: string; name: string; percent: number | null }[];
   steamRareAchievements: { game: string; name: string; percent: number | null }[];
   steamCompletedGames: { name: string; appid: number; hours: number }[];

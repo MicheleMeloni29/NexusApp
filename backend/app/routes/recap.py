@@ -8,6 +8,29 @@ from ..schemas import UserStats
 router = APIRouter()
 
 
+def _summarize_genres(raw_games: list[dict], total_hours: float) -> list[dict]:
+  if total_hours <= 0:
+    return []
+  totals: dict[str, float] = {}
+  for game in raw_games:
+    genres = game.get("genres") or []
+    if not genres:
+      continue
+    hours = (game.get("playtime_forever", 0) or 0) / 60
+    if hours <= 0:
+      continue
+    share = hours / len(genres)
+    for genre in genres:
+      if not genre:
+        continue
+      totals[genre] = totals.get(genre, 0.0) + share
+  ranked = sorted(totals.items(), key=lambda item: item[1], reverse=True)
+  return [
+    {"name": name, "percent": round((hours / total_hours) * 100, 1)}
+    for name, hours in ranked[:3]
+  ]
+
+
 def _get_user_or_404(session: Session, user_id: int) -> User:
   user = session.get(User, user_id)
   if not user:
@@ -35,6 +58,7 @@ def _compose_stats(user: User, steam: SteamStats | None, riot: RiotStats | None)
       }
       for game in top_games[:5]
     ]
+    stats.steam_top_genres = _summarize_genres(raw_games, stats.total_hours)
     stats.steam_games_count = steam.games_count
     stats.steam_recent_hours = steam.recent_hours
     stats.steam_achievements = steam.achievements or []

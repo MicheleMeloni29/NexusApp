@@ -13,6 +13,16 @@ settings = get_settings()
 STEAM_API_BASE = "https://api.steampowered.com"
 RARE_ACHIEVEMENT_THRESHOLD = 10.0
 ACHIEVEMENT_GAME_LIMIT = 20
+STORE_API_BASE = "https://store.steampowered.com/api"
+GENRE_GAME_LIMIT = 12
+GENRE_FETCH_CONCURRENCY = 4
+
+
+def _percent_sort_key(item: Dict[str, Any]) -> tuple:
+  percent = item.get("percent")
+  if percent is None:
+    return (1, 0.0)
+  return (0, percent)
 
 
 def _require_steam_key() -> str:
@@ -107,6 +117,53 @@ async def _fetch_global_achievement_percentages(appid: int) -> Optional[Dict[str
     return {item.get("name"): item.get("percent", 0.0) for item in achievements if item.get("name")}
 
 
+async def _fetch_store_genres(appid: int) -> List[str]:
+  params = {
+    "appids": appid,
+    "filters": "genres",
+  }
+  async with httpx.AsyncClient(timeout=10) as client:
+    try:
+      response = await client.get(f"{STORE_API_BASE}/appdetails", params=params)
+    except httpx.HTTPError:
+      return []
+    if response.status_code >= 400:
+      return []
+    try:
+      payload = response.json()
+    except ValueError:
+      return []
+  app_data = payload.get(str(appid), {})
+  if not app_data.get("success"):
+    return []
+  data = app_data.get("data") or {}
+  genres = data.get("genres") or []
+  return [genre.get("description") for genre in genres if genre.get("description")]
+
+
+async def _attach_genres_to_games(games: List[Dict[str, Any]]) -> None:
+  if not games:
+    return
+  ranked_games = sorted(games, key=lambda g: g.get("playtime_forever", 0), reverse=True)
+  candidates = ranked_games[:GENRE_GAME_LIMIT]
+  semaphore = asyncio.Semaphore(GENRE_FETCH_CONCURRENCY)
+
+  async def _process_game(game: Dict[str, Any]) -> None:
+    appid = game.get("appid")
+    if not appid:
+      return
+    try:
+      app_id = int(appid)
+    except (TypeError, ValueError):
+      return
+    async with semaphore:
+      genres = await _fetch_store_genres(app_id)
+    if genres:
+      game["genres"] = genres
+
+  await asyncio.gather(*[_process_game(game) for game in candidates])
+
+
 async def _summarize_achievements(steam_id: str, games: List[Dict[str, Any]]) -> Dict[str, Any]:
   if not games:
     return {"achievements": [], "rare_achievements": [], "completed_games": []}
@@ -170,8 +227,8 @@ async def _summarize_achievements(steam_id: str, games: List[Dict[str, Any]]) ->
     if result["completed"]:
       completed_games.append(result["completed"])
 
-  achievements = sorted(achievements, key=lambda item: item["percent"])
-  rare_achievements = sorted(rare_achievements, key=lambda item: item["percent"])[:5]
+  achievements = sorted(achievements, key=_percent_sort_key)
+  rare_achievements = sorted(rare_achievements, key=_percent_sort_key)[:5]
   completed_games = completed_games[:5]
 
   return {
@@ -198,6 +255,7 @@ def _summarize_games(games: List[Dict[str, Any]]) -> Dict[str, Any]:
   longest_session_minutes = max((game.get("playtime_forever", 0) for game in games), default=0)
   top_game_entry = max(games, key=lambda g: g.get("playtime_forever", 0), default=None)
   recent_entry = max(games, key=lambda g: g.get("playtime_2weeks", 0), default=None)
+  raw_games = sorted(games, key=lambda g: g.get("playtime_forever", 0), reverse=True)[:25]
 
   return {
     "total_hours": round(total_minutes / 60, 2),
@@ -206,7 +264,7 @@ def _summarize_games(games: List[Dict[str, Any]]) -> Dict[str, Any]:
     "longest_session": int(round(longest_session_minutes / 60)),
     "top_game": top_game_entry.get("name") if top_game_entry else None,
     "last_played_game": recent_entry.get("name") if recent_entry and recent_entry.get("playtime_2weeks") else None,
-    "raw_games": games[:25],  # limit stored payload
+    "raw_games": raw_games,  # limit stored payload
   }
 
 
@@ -255,6 +313,10 @@ async def sync_user(session: Session, user: User) -> SteamStats:
     _fetch_player_level(user.steam_id),
   )
   games = data.get("games", [])
+  try:
+    await _attach_genres_to_games(games)
+  except Exception:
+    pass
   summary = _summarize_games(games)
   summary.update(_summarize_profile(profile, level))
   summary.update(await _summarize_achievements(user.steam_id, games))

@@ -11,7 +11,8 @@ from .models import RiotStats, RiotToken, SteamStats, User
 
 
 class AdminAuth(AuthenticationBackend):
-  def __init__(self, username: str, password: str) -> None:
+  def __init__(self, username: str, password: str, secret_key: str) -> None:
+    super().__init__(secret_key=secret_key)
     self._username = username
     self._password = password
 
@@ -67,7 +68,7 @@ class RiotStatsAdmin(ModelView, model=RiotStats):
 
 def init_admin(app: FastAPI) -> Admin:
   settings = get_settings()
-  auth_backend = AdminAuth(settings.admin_username, settings.admin_password)
+  auth_backend = AdminAuth(settings.admin_username, settings.admin_password, settings.admin_session_secret)
   admin = Admin(app, engine, title="Nexus Admin", authentication_backend=auth_backend)
   admin.add_view(UserAdmin)
   admin.add_view(RiotTokenAdmin)
