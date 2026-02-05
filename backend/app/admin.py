@@ -1,8 +1,37 @@
+from secrets import compare_digest
+
 from fastapi import FastAPI
 from sqladmin import Admin, ModelView
+from sqladmin.authentication import AuthenticationBackend
+from starlette.requests import Request
 
+from .config import get_settings
 from .database import engine
 from .models import RiotStats, RiotToken, SteamStats, User
+
+
+class AdminAuth(AuthenticationBackend):
+  def __init__(self, username: str, password: str) -> None:
+    self._username = username
+    self._password = password
+
+  async def login(self, request: Request) -> bool:
+    form = await request.form()
+    username = form.get("username")
+    password = form.get("password")
+    if not username or not password:
+      return False
+    if compare_digest(str(username), self._username) and compare_digest(str(password), self._password):
+      request.session.update({"admin_logged_in": True})
+      return True
+    return False
+
+  async def logout(self, request: Request) -> bool:
+    request.session.clear()
+    return True
+
+  async def authenticate(self, request: Request) -> bool:
+    return bool(request.session.get("admin_logged_in"))
 
 
 class UserAdmin(ModelView, model=User):
@@ -37,7 +66,9 @@ class RiotStatsAdmin(ModelView, model=RiotStats):
 
 
 def init_admin(app: FastAPI) -> Admin:
-  admin = Admin(app, engine, title="Nexus Admin")
+  settings = get_settings()
+  auth_backend = AdminAuth(settings.admin_username, settings.admin_password)
+  admin = Admin(app, engine, title="Nexus Admin", authentication_backend=auth_backend)
   admin.add_view(UserAdmin)
   admin.add_view(RiotTokenAdmin)
   admin.add_view(SteamStatsAdmin)

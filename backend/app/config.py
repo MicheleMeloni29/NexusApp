@@ -44,6 +44,9 @@ class Settings(BaseSettings):
   riot_api_key: Optional[str] = None
   riot_lol_region: str = "euw1"
   riot_match_region: str = "europe"
+  admin_username: str = "admin"
+  admin_password: str = "change-me"
+  admin_session_secret: str = "change-me-secret"
 
   model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
