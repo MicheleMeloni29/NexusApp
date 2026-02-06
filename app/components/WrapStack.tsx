@@ -73,8 +73,10 @@ export function WrapStack({ stats, onClose }: WrapStackProps) {
         lockScroll();
         return;
       }
-      const delta =
-        Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      let delta = Math.abs(event.deltaX) >= Math.abs(event.deltaY) ? event.deltaX : 0;
+      if (delta === 0 && event.shiftKey) {
+        delta = event.deltaY;
+      }
       if (delta === 0) return;
       scrollAccumulatorRef.current += delta;
       if (Math.abs(scrollAccumulatorRef.current) < 20) return;
@@ -118,12 +120,12 @@ export function WrapStack({ stats, onClose }: WrapStackProps) {
     if (scrollLockRef.current) return;
     const deltaX = last.x - start.x;
     const deltaY = last.y - start.y;
-    if (Math.abs(deltaY) < 40 || Math.abs(deltaY) < Math.abs(deltaX)) {
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) < Math.abs(deltaY)) {
       return;
     }
     lockScroll();
     setActiveIndex((prev) => {
-      const next = deltaY < 0 ? prev + 1 : prev - 1;
+      const next = deltaX < 0 ? prev + 1 : prev - 1;
       return Math.max(0, Math.min(scenes.length - 1, next));
     });
   };
