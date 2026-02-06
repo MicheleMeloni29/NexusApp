@@ -6,13 +6,14 @@ import { useLanguage } from '@/app/components/LanguageProvider';
 type SecondSceneProps = {
     stats: UserStats;
     isPaused: boolean;
+    finalState?: boolean;
 };
 
 const COUNTER_DURATION = 1800;
 const HOURS_PER_DAY = 24;
 const HOURS_PER_MONTH = 24 * 30;
 
-export const SecondScene: React.FC<SecondSceneProps> = ({ stats, isPaused }) => {
+export const SecondScene: React.FC<SecondSceneProps> = ({ stats, isPaused, finalState = false }) => {
     const { t } = useLanguage();
     const [hoursCounter, setHoursCounter] = useState(0);
     const [daysCounter, setDaysCounter] = useState(0);
@@ -33,12 +34,21 @@ export const SecondScene: React.FC<SecondSceneProps> = ({ stats, isPaused }) => 
     useEffect(() => {
         elapsedRef.current = 0;
         lastTimestampRef.current = null;
+        if (finalState) {
+            setHoursCounter(totalHours);
+            setDaysCounter(totalDays);
+            setMonthsCounter(totalMonths);
+            return;
+        }
         setHoursCounter(0);
         setDaysCounter(0);
         setMonthsCounter(0);
-    }, [totalHours]);
+    }, [finalState, totalDays, totalHours, totalMonths]);
 
     useEffect(() => {
+        if (finalState) {
+            return;
+        }
         if (!totalHours) {
             setHoursCounter(0);
             return;
@@ -71,7 +81,7 @@ export const SecondScene: React.FC<SecondSceneProps> = ({ stats, isPaused }) => 
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isPaused, totalHours]);
+    }, [finalState, isPaused, totalHours]);
 
     const ringProgress = totalHours ? hoursCounter / totalHours : 0;
     const ringStyle = {

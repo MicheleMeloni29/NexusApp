@@ -155,5 +155,13 @@
     "legacyGenerated": "LEGACY GENERATA",
     "minting": "Creazione della card...",
     "unknownGame": "Sconosciuto"
+  },
+  "wrap": {
+    "myWrap": "MY WRAP",
+    "browse": "Sfoglia tutte le scene nello stato finale.",
+    "close": "Chiudi MY WRAP",
+    "prev": "Scena precedente",
+    "next": "Scena successiva",
+    "gradientText": "Scorri..."
   }
 }

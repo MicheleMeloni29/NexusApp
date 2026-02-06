@@ -6,6 +6,7 @@ import { useLanguage } from '@/app/components/LanguageProvider';
 type FifthSceneProps = {
     stats: UserStats;
     isPaused: boolean;
+    finalState?: boolean;
 };
 
 type TrophyItem = {
@@ -39,7 +40,7 @@ const formatPercent = (value: number | null | undefined) => {
     return `${rounded}%`;
 };
 
-export const FifthScene: React.FC<FifthSceneProps> = ({ stats, isPaused }) => {
+export const FifthScene: React.FC<FifthSceneProps> = ({ stats, isPaused, finalState = false }) => {
     const { t } = useLanguage();
     const [visibleTiers, setVisibleTiers] = useState(0);
     const elapsedRef = useRef(0);
@@ -79,10 +80,17 @@ export const FifthScene: React.FC<FifthSceneProps> = ({ stats, isPaused }) => {
     useEffect(() => {
         elapsedRef.current = 0;
         lastTimestampRef.current = null;
+        if (finalState) {
+            setVisibleTiers(groupedTrophies.length);
+            return;
+        }
         setVisibleTiers(0);
-    }, [totalTrophies]);
+    }, [finalState, groupedTrophies.length, totalTrophies]);
 
     useEffect(() => {
+        if (finalState) {
+            return;
+        }
         if (isPaused) {
             lastTimestampRef.current = null;
             return;
@@ -110,7 +118,7 @@ export const FifthScene: React.FC<FifthSceneProps> = ({ stats, isPaused }) => {
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [groupedTrophies.length, isPaused]);
+    }, [finalState, groupedTrophies.length, isPaused]);
 
     return (
         <motion.div

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FiMenu, FiMoon, FiSlash, FiSun } from "react-icons/fi";
 import { VideoRecap } from "@/app/components/VideoRecap";
+import { WrapStack } from "@/app/components/WrapStack";
 import FuzzyText from "@/app/components/UI/FuzzyText";
 import type { UserStats } from "@/app/types";
 import {
@@ -34,6 +35,8 @@ export default function HomePage() {
   const [isDark, setIsDark] = useState(true);
   const isItalian = language === "it";
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isWrapStackOpen, setIsWrapStackOpen] = useState(false);
+  const [isVideoRecapOpen, setIsVideoRecapOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [availability, setAvailability] = useState<ProvidersAvailability | null>(null);
   const [statusNotice, setStatusNotice] = useState<Notice | null>(null);
@@ -64,6 +67,7 @@ export default function HomePage() {
   const logoutLabel = t("common.logout");
   const emailLabel = t("common.email");
   const idLabel = t("common.id");
+  const wrapMenuLabel = t("wrap.myWrap");
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const accountButtonRef = useRef<HTMLButtonElement | null>(null);
   const statusMessage = statusNotice
@@ -130,6 +134,27 @@ export default function HomePage() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+    const loadRecap = async () => {
+      try {
+        const recap = await fetchRecap(user.user_id);
+        if (isMounted) {
+          setRecapStats(recap);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setRecapStats(null);
+        }
+      }
+    };
+    void loadRecap();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
@@ -213,12 +238,20 @@ export default function HomePage() {
       }
       const recap = await fetchRecap(user.user_id);
       setRecapStats(recap);
+      setIsWrapStackOpen(false);
+      setIsVideoRecapOpen(true);
     } catch (error) {
       console.error("Failed to generate recap", error);
       setErrorNotice({ kind: "key", key: "accessPage.generateFailed" });
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const openWrapStack = () => {
+    setIsVideoRecapOpen(false);
+    setIsWrapStackOpen(true);
+    setIsAccountMenuOpen(false);
   };
 
   const topControls = (
@@ -269,9 +302,15 @@ export default function HomePage() {
               <p>
                 <span className="text-[rgba(var(--foreground-rgb),0.5)]">{emailLabel}:</span> {accountLabel}
               </p>
-              <p>
-                <span className="text-[rgba(var(--foreground-rgb),0.5)]">{idLabel}:</span> {user.user_id}
-              </p>
+              {recapStats ? (
+                <button
+                  type="button"
+                  onClick={openWrapStack}
+                  className="w-full rounded-xl border border-[rgba(var(--foreground-rgb),0.2)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-[rgba(var(--foreground-rgb),0.75)] transition hover:border-[var(--foreground)] hover:text-[var(--foreground)]"
+                >
+                  {wrapMenuLabel}
+                </button>
+              ) : null}
             </div>
             <button
               type="button"
@@ -423,7 +462,19 @@ export default function HomePage() {
         </button>
       </div>
 
-      {recapStats && <VideoRecap stats={recapStats} onComplete={() => setRecapStats(null)} />}
+      {recapStats && isVideoRecapOpen ? (
+        <VideoRecap
+          stats={recapStats}
+          onComplete={() => {
+            setIsVideoRecapOpen(false);
+            setIsWrapStackOpen(true);
+          }}
+        />
+      ) : null}
+
+      {recapStats && isWrapStackOpen ? (
+        <WrapStack stats={recapStats} onClose={() => setIsWrapStackOpen(false)} />
+      ) : null}
     </main>
   );
 }

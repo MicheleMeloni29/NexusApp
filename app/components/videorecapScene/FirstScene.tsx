@@ -6,6 +6,7 @@ import { useLanguage } from '@/app/components/LanguageProvider';
 type FirstSceneProps = {
     stats: UserStats;
     isPaused: boolean;
+    finalState?: boolean;
 };
 
 // COUNTER ANNI DI ATTIVITA'
@@ -63,7 +64,7 @@ const RollingText: React.FC<RollingTextProps> = ({ items, index, className }) =>
     );
 };
 
-export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
+export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused, finalState = false }) => {
     const { t, language } = useLanguage();
     const [yearsCounter, setYearsCounter] = useState(0);
     const [levelCounter, setLevelCounter] = useState(0);
@@ -130,11 +131,21 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
     useEffect(() => {
         elapsedRef.current = 0;
         lastTimestampRef.current = null;
+        if (finalState) {
+            setYearsCounter(profileCreatedAt ? yearsActive : 0);
+            setLevelCounter(targetLevel ?? 0);
+            setDateProgress(profileCreatedAt ? 1 : 0);
+            return;
+        }
         setYearsCounter(0);
         setLevelCounter(0);
-    }, [profileCreatedAt, yearsActive, targetLevel]);
+        setDateProgress(0);
+    }, [finalState, profileCreatedAt, yearsActive, targetLevel]);
 
     useEffect(() => {
+        if (finalState) {
+            return;
+        }
         if (!profileCreatedAt && targetLevel === null) {
             setYearsCounter(0);
             setLevelCounter(0);
@@ -178,7 +189,7 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused }) => {
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isPaused, profileCreatedAt, targetLevel, yearsActive]);
+    }, [finalState, isPaused, profileCreatedAt, targetLevel, yearsActive]);
 
     return (
         <motion.div

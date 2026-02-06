@@ -155,5 +155,13 @@
     "legacyGenerated": "LEGACY GENERATED",
     "minting": "Minting your card...",
     "unknownGame": "Unknown"
+  },
+  "wrap": {
+    "myWrap": "MY WRAP",
+    "browse": "Browse every scene in its final state.",
+    "close": "Close MY WRAP",
+    "prev": "Previous scene",
+    "next": "Next scene",
+    "gradientText": "Scroll..."
   }
 }

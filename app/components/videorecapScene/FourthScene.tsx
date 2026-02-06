@@ -6,6 +6,7 @@ import { useLanguage } from '@/app/components/LanguageProvider';
 type FourthSceneProps = {
     stats: UserStats;
     isPaused: boolean;
+    finalState?: boolean;
 };
 
 const ANIMATION_DURATION = 4000;
@@ -16,7 +17,7 @@ const buildSteamCoverUrl = (appid?: number | null) => {
     return `${STEAM_COVER_BASE}/${appid}/header.jpg`;
 };
 
-export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => {
+export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused, finalState = false }) => {
     const { t } = useLanguage();
     const [revealCount, setRevealCount] = useState(0);
     const elapsedRef = useRef(0);
@@ -33,10 +34,17 @@ export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => 
     useEffect(() => {
         elapsedRef.current = 0;
         lastTimestampRef.current = null;
+        if (finalState) {
+            setRevealCount(topGames.length);
+            return;
+        }
         setRevealCount(0);
-    }, [topGames.length]);
+    }, [finalState, topGames.length]);
 
     useEffect(() => {
+        if (finalState) {
+            return;
+        }
         if (!topGames.length) {
             setRevealCount(0);
             return;
@@ -68,7 +76,7 @@ export const FourthScene: React.FC<FourthSceneProps> = ({ stats, isPaused }) => 
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isPaused, topGames.length]);
+    }, [finalState, isPaused, topGames.length]);
 
     return (
         <motion.div

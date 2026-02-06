@@ -6,11 +6,12 @@ import { useLanguage } from '@/app/components/LanguageProvider';
 type ThirdSceneProps = {
     stats: UserStats;
     isPaused: boolean;
+    finalState?: boolean;
 };
 
 const ANIMATION_DURATION = 2400;
 
-export const ThirdScene: React.FC<ThirdSceneProps> = ({ stats, isPaused }) => {
+export const ThirdScene: React.FC<ThirdSceneProps> = ({ stats, isPaused, finalState = false }) => {
     const { t } = useLanguage();
     const [revealCount, setRevealCount] = useState(0);
     const elapsedRef = useRef(0);
@@ -39,10 +40,17 @@ export const ThirdScene: React.FC<ThirdSceneProps> = ({ stats, isPaused }) => {
     useEffect(() => {
         elapsedRef.current = 0;
         lastTimestampRef.current = null;
+        if (finalState) {
+            setRevealCount(displayGenres.length);
+            return;
+        }
         setRevealCount(0);
-    }, [displayGenres.length]);
+    }, [displayGenres.length, finalState]);
 
     useEffect(() => {
+        if (finalState) {
+            return;
+        }
         if (!displayGenres.length) {
             setRevealCount(0);
             return;
@@ -74,7 +82,7 @@ export const ThirdScene: React.FC<ThirdSceneProps> = ({ stats, isPaused }) => {
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isPaused, displayGenres.length]);
+    }, [finalState, isPaused, displayGenres.length]);
 
     return (
         <motion.div
