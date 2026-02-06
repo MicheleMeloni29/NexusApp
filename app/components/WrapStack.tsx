@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import type { UserStats } from "@/app/types";
 import GradientText from "./UI/GradientText";
@@ -52,19 +52,21 @@ export function WrapStack({ stats, onClose }: WrapStackProps) {
   const scrollLockRef = useRef(false);
   const scrollAccumulatorRef = useRef(0);
   const unlockTimerRef = useRef<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchLastRef = useRef<{ x: number; y: number } | null>(null);
+
+  const lockScroll = useCallback(() => {
+    scrollLockRef.current = true;
+    if (unlockTimerRef.current !== null) {
+      window.clearTimeout(unlockTimerRef.current);
+    }
+    unlockTimerRef.current = window.setTimeout(() => {
+      scrollLockRef.current = false;
+      unlockTimerRef.current = null;
+    }, 700);
+  }, []);
 
   useEffect(() => {
-    const lockScroll = () => {
-      scrollLockRef.current = true;
-      if (unlockTimerRef.current !== null) {
-        window.clearTimeout(unlockTimerRef.current);
-      }
-      unlockTimerRef.current = window.setTimeout(() => {
-        scrollLockRef.current = false;
-        unlockTimerRef.current = null;
-      }, 700);
-    };
-
     const handleWheel = (event: WheelEvent) => {
       if (scrollLockRef.current) {
         event.preventDefault();
@@ -92,10 +94,47 @@ export function WrapStack({ stats, onClose }: WrapStackProps) {
         window.clearTimeout(unlockTimerRef.current);
       }
     };
-  }, [scenes.length]);
+  }, [lockScroll, scenes.length]);
+
+  const handleTouchStart = (event: React.TouchEvent) => {
+    if (event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    touchLastRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchMove = (event: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = event.touches[0];
+    touchLastRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = () => {
+    const start = touchStartRef.current;
+    const last = touchLastRef.current;
+    touchStartRef.current = null;
+    touchLastRef.current = null;
+    if (!start || !last) return;
+    if (scrollLockRef.current) return;
+    const deltaX = last.x - start.x;
+    const deltaY = last.y - start.y;
+    if (Math.abs(deltaY) < 40 || Math.abs(deltaY) < Math.abs(deltaX)) {
+      return;
+    }
+    lockScroll();
+    setActiveIndex((prev) => {
+      const next = deltaY < 0 ? prev + 1 : prev - 1;
+      return Math.max(0, Math.min(scenes.length - 1, next));
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-40 bg-[var(--background)]">
+    <div
+      className="fixed inset-0 z-40 bg-[var(--background)] touch-none overscroll-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="relative h-full w-full overflow-hidden">
         <ActiveSceneComponent key={activeScene?.id} stats={stats} isPaused finalState />
       </div>
