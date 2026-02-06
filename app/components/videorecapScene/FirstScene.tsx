@@ -9,10 +9,8 @@ type FirstSceneProps = {
     finalState?: boolean;
 };
 
-// COUNTER ANNI DI ATTIVITA'
-const COUNTER_DURATION = 2000;
-// COUNTER LIVELLO PROFILO
-const LEVEL_COUNTER_DURATION = 2000;
+const COUNTER_STEP_DURATION = 1500;
+const TOTAL_SEQUENCE_DURATION = COUNTER_STEP_DURATION * 3;
 
 // EFFETTO ROLLING SUI NUMERI DI ANNI DI ATTIVITA' E LIVELLO PROFILO
 type RollingNumberProps = {
@@ -165,23 +163,26 @@ export const FirstScene: React.FC<FirstSceneProps> = ({ stats, isPaused, finalSt
             lastTimestampRef.current = timestamp;
             elapsedRef.current += delta;
 
-            const yearsProgress = profileCreatedAt
-                ? Math.min(elapsedRef.current / COUNTER_DURATION, 1)
-                : 0;
+            const elapsed = Math.min(elapsedRef.current, TOTAL_SEQUENCE_DURATION);
             const levelProgress = targetLevel !== null
-                ? Math.min(elapsedRef.current / LEVEL_COUNTER_DURATION, 1)
+                ? Math.min(elapsed / COUNTER_STEP_DURATION, 1)
                 : 0;
-            const dateProg = Math.min(elapsedRef.current / COUNTER_DURATION, 1);
+            const dateProg = profileCreatedAt
+                ? Math.min(Math.max((elapsed - COUNTER_STEP_DURATION) / COUNTER_STEP_DURATION, 0), 1)
+                : 0;
+            const yearsProgress = profileCreatedAt
+                ? Math.min(Math.max((elapsed - COUNTER_STEP_DURATION * 2) / COUNTER_STEP_DURATION, 0), 1)
+                : 0;
 
-            if (profileCreatedAt) {
-                setYearsCounter(yearsActive * yearsProgress);
-            }
             if (targetLevel !== null) {
                 setLevelCounter(targetLevel * levelProgress);
             }
             setDateProgress(dateProg);
+            if (profileCreatedAt) {
+                setYearsCounter(yearsActive * yearsProgress);
+            }
 
-            if (yearsProgress >= 1 && levelProgress >= 1 && dateProg >= 1) {
+            if (elapsed >= TOTAL_SEQUENCE_DURATION) {
                 return;
             }
             rafId = requestAnimationFrame(tick);

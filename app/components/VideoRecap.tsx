@@ -17,8 +17,8 @@ type VideoRecapProps = {
 };
 
 const scenes = [
-  { id: "intro", duration: 6000 },
-  { id: "total_time", duration: 6000 },
+  { id: "intro", duration: 5500 },
+  { id: "total_time", duration: 7000 },
   { id: "top_genres", duration: 6000 },
   { id: "top_games", duration: 6000 },
   { id: "steam_trophies", duration: 6000 },

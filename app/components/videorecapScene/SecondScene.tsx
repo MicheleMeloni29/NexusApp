@@ -9,7 +9,11 @@ type SecondSceneProps = {
     finalState?: boolean;
 };
 
-const COUNTER_DURATION = 1800;
+const HOURS_DURATION = 2000;
+const DAYS_DURATION = 2000;
+const MONTHS_DURATION = 2000;
+const POST_DELAY = 1000;
+const TOTAL_SEQUENCE_DURATION = HOURS_DURATION + DAYS_DURATION + MONTHS_DURATION + POST_DELAY;
 const HOURS_PER_DAY = 24;
 const HOURS_PER_MONTH = 24 * 30;
 
@@ -67,13 +71,19 @@ export const SecondScene: React.FC<SecondSceneProps> = ({ stats, isPaused, final
             lastTimestampRef.current = timestamp;
             elapsedRef.current += delta;
 
-            const progress = Math.min(elapsedRef.current / COUNTER_DURATION, 1);
-            const hoursValue = Math.floor(totalHours * progress);
-            setHoursCounter(hoursValue);
-            setDaysCounter(Number((totalDays * progress).toFixed(1)));
-            setMonthsCounter(Number((totalMonths * progress).toFixed(1)));
+            const elapsed = Math.min(elapsedRef.current, TOTAL_SEQUENCE_DURATION);
+            const hoursProgress = Math.min(elapsed / HOURS_DURATION, 1);
+            const daysProgress = Math.min(Math.max((elapsed - HOURS_DURATION) / DAYS_DURATION, 0), 1);
+            const monthsProgress = Math.min(
+                Math.max((elapsed - HOURS_DURATION - DAYS_DURATION) / MONTHS_DURATION, 0),
+                1
+            );
 
-            if (progress >= 1) {
+            setHoursCounter(Math.floor(totalHours * hoursProgress));
+            setDaysCounter(Number((totalDays * daysProgress).toFixed(1)));
+            setMonthsCounter(Number((totalMonths * monthsProgress).toFixed(1)));
+
+            if (elapsed >= TOTAL_SEQUENCE_DURATION) {
                 return;
             }
             rafId = requestAnimationFrame(tick);
