@@ -137,6 +137,7 @@ body::-webkit-scrollbar {
 
   --radius: 0.625rem;
   --background: var(--brand-black);
+  --wrap-overlay: rgba(0, 0, 0, 0.6);
   --foreground: var(--brand-white);
   --foreground-rgb: 255, 255, 255;
   --card: rgba(var(--brand-black-rgb), 0.94);
@@ -173,6 +174,7 @@ body::-webkit-scrollbar {
 /*COLORI TEMA SCURO*/
 .dark {
   --background: var(--brand-black);
+  --wrap-overlay: rgba(0, 0, 0, 0.6);
   --foreground: var(--brand-white);
   --foreground-rgb: 255, 255, 255;
   --card: rgba(var(--brand-black-rgb), 0.94);
@@ -213,6 +215,7 @@ body::-webkit-scrollbar {
   --brand-purple: #b800b8;
   --brand-purple-rgb: 184, 0, 184;
   --background: #e8e9ffed;
+  --wrap-overlay: rgba(255, 255, 255, 0.72);
   --foreground: var(--brand-black);
   --foreground-rgb: 0, 0, 0;
   --card: rgba(var(--brand-white-rgb), 0.96);

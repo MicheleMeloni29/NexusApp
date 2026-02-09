@@ -20,9 +20,10 @@ const scenes = [
   { id: "intro", duration: 5500 },
   { id: "total_time", duration: 7000 },
   { id: "top_genres", duration: 6000 },
-  { id: "top_games", duration: 6000 },
+  { id: "top_games", duration: 7000 },
   { id: "steam_trophies", duration: 6000 },
 ];
+const POST_SCENE_DELAY = 1000;
 
 export function VideoRecap({ onComplete, stats }: VideoRecapProps) {
   const { t } = useLanguage();
@@ -61,7 +62,7 @@ export function VideoRecap({ onComplete, stats }: VideoRecapProps) {
       const progress = Math.min(elapsedRef.current / scene.duration, 1);
       setSceneProgress(progress);
 
-      if (progress >= 1) {
+      if (elapsedRef.current >= scene.duration + POST_SCENE_DELAY) {
         if (currentSceneIndex < scenes.length - 1) {
           setCurrentSceneIndex((prev) => prev + 1);
         } else {

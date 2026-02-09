@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { UserStats } from '@/app/types';
 import { useLanguage } from '@/app/components/LanguageProvider';
+import { SceneBackground } from '@/app/components/wrapBackgrounds/SceneBackground';
 
 type FifthSceneProps = {
     stats: UserStats;
@@ -128,7 +129,7 @@ export const FifthScene: React.FC<FifthSceneProps> = ({ stats, isPaused, finalSt
             exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
             className="absolute inset-0 flex items-center justify-center"
         >
-            <div className="absolute inset-0 bg-[var(--background)]" />
+            <SceneBackground sceneId="steam_trophies" isPaused={isPaused} finalState={finalState} />
             <div className="relative z-10 flex w-full max-w-5xl flex-col items-center gap-6 px-6 text-center">
                 <p className="text-base uppercase tracking-[0.4em] text-[var(--brand-purple)]">
                     {t('recap.steamTrophiesTitle')}
