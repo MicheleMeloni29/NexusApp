@@ -23,6 +23,7 @@ export interface LiquidEtherProps {
     autoRampDuration?: number;
     paused?: boolean;
     alwaysAuto?: boolean;
+    warmupFrames?: number;
 }
 
 interface SimOptions {
@@ -48,6 +49,7 @@ interface LiquidEtherWebGL {
         mouse?: { autoIntensity: number; takeoverDuration: number };
         forceStop: () => void;
     };
+    render: () => void;
     resize: () => void;
     start: () => void;
     pause: () => void;
@@ -77,7 +79,8 @@ export default function LiquidEther({
     autoResumeDelay = 1000,
     autoRampDuration = 0.6,
     paused = false,
-    alwaysAuto = false
+    alwaysAuto = false,
+    warmupFrames = 30
 }: LiquidEtherProps): React.ReactElement {
     const mountRef = useRef<HTMLDivElement | null>(null);
     const webglRef = useRef<LiquidEtherWebGL | null>(null);
@@ -1131,8 +1134,33 @@ export default function LiquidEther({
             });
             if (resolution !== prevRes) sim.resize();
         };
+        const runWarmup = () => {
+            if (!webglRef.current) return;
+            const autoDriver = webglRef.current.autoDriver;
+            const prevEnabled = autoDriver?.enabled ?? false;
+            if (autoDriver) autoDriver.enabled = true;
+            let warmupCount = 0;
+            let warmupRaf: number | null = null;
+            const warmup = () => {
+                if (!webglRef.current) return;
+                webglRef.current.render();
+                warmupCount += 1;
+                if (warmupCount < warmupFrames) {
+                    warmupRaf = requestAnimationFrame(warmup);
+                } else {
+                    if (autoDriver) autoDriver.enabled = prevEnabled;
+                    if (warmupRaf) cancelAnimationFrame(warmupRaf);
+                    webglRef.current.pause();
+                }
+            };
+            warmup();
+        };
         applyOptionsFromProps();
-        webgl.start();
+        if (paused) {
+            runWarmup();
+        } else {
+            webgl.start();
+        }
 
         const io = new IntersectionObserver(
             entries => {
@@ -1144,6 +1172,7 @@ export default function LiquidEther({
                     webglRef.current.start();
                 } else {
                     webglRef.current.pause();
+                    if (pausedRef.current) runWarmup();
                 }
             },
             { threshold: [0, 0.01, 0.1] }
@@ -1157,6 +1186,7 @@ export default function LiquidEther({
             resizeRafRef.current = requestAnimationFrame(() => {
                 if (!webglRef.current) return;
                 webglRef.current.resize();
+                if (pausedRef.current) runWarmup();
             });
         });
         ro.observe(container);
@@ -1200,7 +1230,8 @@ export default function LiquidEther({
         autoIntensity,
         takeoverDuration,
         autoResumeDelay,
-        autoRampDuration
+        autoRampDuration,
+        warmupFrames
     ]);
 
     useEffect(() => {

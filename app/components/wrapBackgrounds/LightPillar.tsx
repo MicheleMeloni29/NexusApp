@@ -11,6 +11,7 @@ interface LightPillarProps {
     glowAmount?: number;
     pillarWidth?: number;
     pillarHeight?: number;
+    zoom?: number;
     noiseIntensity?: number;
     mixBlendMode?: React.CSSProperties['mixBlendMode'];
     pillarRotation?: number;
@@ -27,6 +28,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
     glowAmount = 0.005,
     pillarWidth = 3.0,
     pillarHeight = 0.4,
+    zoom = 1,
     noiseIntensity = 0.5,
     mixBlendMode = 'screen',
     pillarRotation = 0,
@@ -133,6 +135,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
       uniform float uGlowAmount;
       uniform float uPillarWidth;
       uniform float uPillarHeight;
+      uniform float uZoom;
       uniform float uNoiseIntensity;
       uniform float uPillarRotation;
       uniform float uRotCos;
@@ -155,6 +158,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
       void main() {
         vec2 fragCoord = vUv * uResolution;
         vec2 uv = (fragCoord * 2.0 - uResolution) / uResolution.y;
+        uv *= uZoom;
         
         // Apply 2D rotation to UV coordinates using pre-computed values
         uv = vec2(
@@ -241,7 +245,9 @@ const LightPillar: React.FC<LightPillarProps> = ({
         float rnd = noise(gl_FragCoord.xy);
         color -= rnd / 15.0 * uNoiseIntensity;
         
-        gl_FragColor = vec4(color * uIntensity, 1.0);
+        vec3 finalColor = max(color * uIntensity, 0.0);
+        float alpha = clamp(max(max(finalColor.r, finalColor.g), finalColor.b), 0.0, 1.0);
+        gl_FragColor = vec4(finalColor, alpha);
       }
     `;
 
@@ -273,6 +279,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
                 uGlowAmount: { value: glowAmount },
                 uPillarWidth: { value: pillarWidth },
                 uPillarHeight: { value: pillarHeight },
+                uZoom: { value: zoom },
                 uNoiseIntensity: { value: noiseIntensity },
                 uPillarRotation: { value: pillarRotation },
                 uRotCos: { value: 1.0 },
@@ -398,6 +405,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
         glowAmount,
         pillarWidth,
         pillarHeight,
+        zoom,
         noiseIntensity,
         pillarRotation,
         webGLSupported,
