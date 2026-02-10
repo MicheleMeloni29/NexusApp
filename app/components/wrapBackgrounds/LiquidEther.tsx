@@ -46,6 +46,7 @@ interface LiquidEtherWebGL {
         speed: number;
         resumeDelay: number;
         rampDurationMs: number;
+        alwaysAuto: boolean;
         mouse?: { autoIntensity: number; takeoverDuration: number };
         forceStop: () => void;
     };
