@@ -1,81 +1,125 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FiSun, FiMoon } from "react-icons/fi";
-import ParticlesBackground from "./components/ParticlesBackground";
-import LoginCard from "./components/LoginCard";
-import FuzzyText from "@/app/components/UI/FuzzyText";
+import Loginpage from "./screens/Loginpage";
+import GenerateWrapPage from "./screens/GenerateWrapPage";
+import HomePage from "./screens/HomePage";
+import type { UserStats } from "@/app/types";
+import { fetchCurrentUser, fetchRecap, type AuthUser } from "@/lib/api";
 import { useLanguage } from "@/app/components/LanguageProvider";
 
-export default function Home() {
-  const { language, setLanguage, t } = useLanguage();
-  const [isDark, setIsDark] = useState(true);
-  const [showIntro, setShowIntro] = useState(true);
-  const isItalian = language === "it";
+type Screen = "generate" | "home";
+
+const getOnboardingKey = (userId: number) => `nexus-onboarded:${userId}`;
+
+export default function RootPage() {
+  const { t } = useLanguage();
+  const [isBooting, setIsBooting] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [screen, setScreen] = useState<Screen>("home");
+  const [lastRecap, setLastRecap] = useState<UserStats | null>(null);
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle("dark", isDark);
-    root.classList.toggle("light", !isDark);
-  }, [isDark]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowIntro(false), 3000);
-    return () => clearTimeout(timer);
+    let isMounted = true;
+    const load = async () => {
+      setIsBooting(true);
+      try {
+        const currentUser = await fetchCurrentUser();
+        if (!isMounted) return;
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Failed to load current user", error);
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsBooting(false);
+        }
+      }
+    };
+    void load();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const particleColors = useMemo(() => ["#8BFF00", "#FF00FF"], []);
-  const backgroundHex = isDark ? "#000000" : "#FFFFFF";
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    const key = getOnboardingKey(user.user_id);
+    const stored = localStorage.getItem(key);
+    const onboarded = stored === "true";
+    setScreen(onboarded ? "home" : "generate");
+  }, [user]);
 
-  return (
-    <ParticlesBackground
-      particleCount={260}
-      particleSpread={9}
-      particleColors={particleColors}
-      particleBaseSize={60}
-      sizeRandomness={0.4}
-      speed={0.25}
-      moveParticlesOnHover
-      particleHoverFactor={0.6}
-      alphaParticles
-      style={{ backgroundColor: backgroundHex }}
-      backgroundColor={backgroundHex}
-    >
-      <div className="absolute top-4 right-4 z-20 flex gap-3">
-        <button
-          type="button"
-          onClick={() => setIsDark((prev) => !prev)}
-          aria-label={isDark ? t("theme.toLight") : t("theme.toDark")}
-          className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[var(--brand-green)] bg-[rgba(var(--brand-white-rgb),0.05)] text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-green)] hover:text-[var(--brand-purple)]"
-        >
-          {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
-        </button>
-        <button
-          type="button"
-          onClick={() => setLanguage(isItalian ? "en" : "it")}
-          aria-label={isItalian ? t("language.toEnglish") : t("language.toItalian")}
-          className="flex h-8 w-8 xl:h-16 xl:w-16 items-center justify-center rounded-full border-2 border-[var(--brand-green)] text-xs xl:text-sm font-semibold uppercase text-[var(--foreground)] transition hover:scale-105 hover:border-[var(--brand-green)]"
-        >
-          {isItalian ? t("language.codeIt") : t("language.codeEn")}
-        </button>
-      </div>
-      <div className="flex min-h-screen items-center justify-center px-4 py-12">
-        {showIntro && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 text-center pointer-events-none">
-            <div className="intro-fade intro-delay-1">
-              <FuzzyText fontSize="clamp(2.5rem,8vw,5rem)" color="#FF00FF" baseIntensity={0.2} hoverIntensity={0.35}>
-                {t("homeIntro.title")}
-              </FuzzyText>
-            </div>
-            <div className="intro-fade intro-delay-2">
-              <FuzzyText fontSize="clamp(1.4rem,6vw,3.5rem)" color="#FF00FF" baseIntensity={0.14} hoverIntensity={0.24}>
-                {t("homeIntro.subtitle")}
-              </FuzzyText>
-            </div>
-          </div>
-        )}
-        {!showIntro && <LoginCard />}
-      </div>
-    </ParticlesBackground>
+  useEffect(() => {
+    if (!user) {
+      setLastRecap(null);
+      return;
+    }
+    let isMounted = true;
+    const loadRecap = async () => {
+      try {
+        const recap = await fetchRecap(user.user_id);
+        if (isMounted) {
+          setLastRecap(recap);
+        }
+      } catch (error) {
+        console.error("Failed to load recap", error);
+        if (isMounted) {
+          setLastRecap(null);
+        }
+      }
+    };
+    void loadRecap();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const handleFlowComplete = (stats: UserStats | null) => {
+    if (user) {
+      localStorage.setItem(getOnboardingKey(user.user_id), "true");
+    }
+    setLastRecap(stats ?? lastRecap);
+    setScreen("home");
+  };
+
+  const handleRecapUpdate = (stats: UserStats | null) => {
+    setLastRecap(stats);
+  };
+
+  const handleGenerate = () => {
+    setScreen("generate");
+  };
+
+  const showLoading = useMemo(
+    () => (
+      <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center px-6 py-12">
+        <p className="text-sm text-[rgba(var(--foreground-rgb),0.7)]">{t("common.loading")}</p>
+      </main>
+    ),
+    [t]
   );
+
+  if (isBooting) {
+    return showLoading;
+  }
+
+  if (!user) {
+    return <Loginpage />;
+  }
+
+  if (screen === "generate") {
+    return (
+      <GenerateWrapPage
+        onFlowComplete={handleFlowComplete}
+        onRecapUpdate={handleRecapUpdate}
+      />
+    );
+  }
+
+  return <HomePage stats={lastRecap} onGenerate={handleGenerate} />;
 }

@@ -56,12 +56,12 @@ export default function LoginCard() {
         setRegisterPassword("");
         setConfirmPassword("");
         setTimeout(() => {
-          window.location.href = "/accesso";
+          window.location.href = "/";
         }, 1400);
         return;
       }
       await loginAccount(trimmedEmail, loginPassword);
-      window.location.href = "/accesso";
+      window.location.href = "/";
     } catch (error) {
       console.error("Account auth failed", error);
       const fallbackKey = isRegister

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import type { UserStats } from "@/app/types";
-import GradientText from "./UI/GradientText";
+import GradientText from "@/app/components/UI/GradientText";
 import { useLanguage } from "@/app/components/LanguageProvider";
 import { FirstScene } from "@/app/components/videorecapScene/FirstScene";
 import { SecondScene } from "@/app/components/videorecapScene/SecondScene";

@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FiMenu, FiMoon, FiSlash, FiSun } from "react-icons/fi";
+import { FiMenu, FiMoon, FiSlash, FiSun, FiX } from "react-icons/fi";
 import { VideoRecap } from "@/app/components/VideoRecap";
-import { WrapStack } from "@/app/components/WrapStack";
+import { WrapStack } from "@/app/screens/WrapStack";
+import PlayerCard from "@/app/screens/PlayerCard";
 import FuzzyText from "@/app/components/UI/FuzzyText";
 import type { UserStats } from "@/app/types";
 import {
@@ -29,7 +30,12 @@ type Notice =
   | { kind: "key"; key: string; params?: Record<string, string | number> }
   | { kind: "message"; message: string };
 
-export default function HomePage() {
+type GenerateWrapPageProps = {
+  onFlowComplete?: (stats: UserStats | null) => void;
+  onRecapUpdate?: (stats: UserStats | null) => void;
+};
+
+export default function GenerateWrapPage({ onFlowComplete, onRecapUpdate }: GenerateWrapPageProps) {
   const { language, setLanguage, t } = useLanguage();
   const searchParams = useSearchParams();
   const [isDark, setIsDark] = useState(true);
@@ -37,6 +43,8 @@ export default function HomePage() {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isWrapStackOpen, setIsWrapStackOpen] = useState(false);
   const [isVideoRecapOpen, setIsVideoRecapOpen] = useState(false);
+  const [isPlayerCardOpen, setIsPlayerCardOpen] = useState(false);
+  const [openPlayerAfterWrap, setOpenPlayerAfterWrap] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [availability, setAvailability] = useState<ProvidersAvailability | null>(null);
   const [statusNotice, setStatusNotice] = useState<Notice | null>(null);
@@ -66,7 +74,6 @@ export default function HomePage() {
   const accountMenuLabel = t("common.account");
   const logoutLabel = t("common.logout");
   const emailLabel = t("common.email");
-  const idLabel = t("common.id");
   const wrapMenuLabel = t("wrap.myWrap");
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const accountButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -82,11 +89,6 @@ export default function HomePage() {
     : "";
   const suggestionText =
     errorMessage || statusMessage || t("accessPage.suggestionDefault");
-  const suggestionTone = errorMessage
-    ? "text-[rgba(var(--brand-purple-rgb),0.9)]"
-    : statusMessage
-      ? "text-[var(--brand-green)]"
-      : "text-[rgba(var(--foreground-rgb),0.6)]";
 
   useEffect(() => {
     const root = document.documentElement;
@@ -145,6 +147,7 @@ export default function HomePage() {
           setRecapStats(recap);
         }
       } catch (error) {
+        console.error("Failed to load recap", error);
         if (isMounted) {
           setRecapStats(null);
         }
@@ -155,6 +158,11 @@ export default function HomePage() {
       isMounted = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!onRecapUpdate) return;
+    onRecapUpdate(recapStats ?? null);
+  }, [onRecapUpdate, recapStats]);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
@@ -197,7 +205,7 @@ export default function HomePage() {
       }
       return;
     }
-    const nextUrl = `${window.location.origin}/accesso`;
+    const nextUrl = `${window.location.origin}/`;
     const redirectUrl = buildProviderLoginUrl(provider, nextUrl);
     window.location.href = redirectUrl;
   };
@@ -239,6 +247,7 @@ export default function HomePage() {
       const recap = await fetchRecap(user.user_id);
       setRecapStats(recap);
       setIsWrapStackOpen(false);
+      setOpenPlayerAfterWrap(true);
       setIsVideoRecapOpen(true);
     } catch (error) {
       console.error("Failed to generate recap", error);
@@ -250,8 +259,14 @@ export default function HomePage() {
 
   const openWrapStack = () => {
     setIsVideoRecapOpen(false);
+    setOpenPlayerAfterWrap(false);
     setIsWrapStackOpen(true);
     setIsAccountMenuOpen(false);
+  };
+
+  const handleClosePlayerCard = () => {
+    setIsPlayerCardOpen(false);
+    onFlowComplete?.(recapStats ?? null);
   };
 
   const topControls = (
@@ -467,13 +482,48 @@ export default function HomePage() {
           stats={recapStats}
           onComplete={() => {
             setIsVideoRecapOpen(false);
+            setOpenPlayerAfterWrap(true);
             setIsWrapStackOpen(true);
           }}
         />
       ) : null}
 
       {recapStats && isWrapStackOpen ? (
-        <WrapStack stats={recapStats} onClose={() => setIsWrapStackOpen(false)} />
+        <WrapStack
+          stats={recapStats}
+          onClose={() => {
+            setIsWrapStackOpen(false);
+            if (openPlayerAfterWrap) {
+              setIsPlayerCardOpen(true);
+              setOpenPlayerAfterWrap(false);
+            }
+          }}
+        />
+      ) : null}
+
+      {recapStats && isPlayerCardOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(0,0,0,0.7)] px-4 py-10">
+          <div className="relative w-full max-w-6xl">
+            <button
+              type="button"
+              onClick={handleClosePlayerCard}
+              aria-label={t("playerCard.close")}
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(var(--foreground-rgb),0.2)] bg-[rgba(var(--brand-black-rgb),0.35)] text-[var(--foreground)] backdrop-blur transition hover:scale-105 hover:border-[var(--brand-green)] hover:text-[var(--brand-purple)]"
+            >
+              <FiX size={18} />
+            </button>
+            <PlayerCard stats={recapStats} />
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={handleClosePlayerCard}
+                className="rounded-2xl border border-[rgba(var(--foreground-rgb),0.2)] px-6 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[rgba(var(--foreground-rgb),0.75)] transition hover:border-[var(--foreground)] hover:text-[var(--foreground)]"
+              >
+                {t("playerCard.continue")}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </main>
   );
