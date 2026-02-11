@@ -3,6 +3,8 @@ import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { LanguageProvider } from "@/app/components/LanguageProvider";
+import { SpeedInsights } from '@vercel/speed-insights/next';
+
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -37,6 +39,7 @@ export default function RootLayout({
         className={`${geistMono.variable} ${oxaniumLight.variable} antialiased`}
       >
         <LanguageProvider>{children}</LanguageProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
