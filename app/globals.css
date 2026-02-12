@@ -116,6 +116,50 @@
   }
 }
 
+.animated-border {
+  --border-angle: 0deg;
+  --border-from: var(--brand-green);
+  --border-mid: var(--brand-purple);
+  --button-bg: var(--background);
+  position: relative;
+  isolation: isolate;
+  padding: 2px;
+  border-radius: 1rem;
+  background: conic-gradient(
+    from var(--border-angle),
+    var(--border-from),
+    var(--border-mid),
+    var(--border-from)
+  );
+  animation: animated-border-spin 6s linear infinite;
+}
+
+.animated-border:hover,
+.animated-border:focus-visible {
+  animation-duration: 2.5s;
+}
+
+.animated-border__inner {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  width: 100%;
+  border-radius: calc(1rem - 2px);
+  background: var(--button-bg);
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes animated-border-spin {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
 body {
   -ms-overflow-style: none;
   scrollbar-width: none;

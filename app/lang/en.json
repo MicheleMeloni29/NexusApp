@@ -73,6 +73,7 @@
     "back": "Go Back"
   },
   "accessPage": {
+    "title": "Generate your Wrap",
     "statusConnected": "{{provider}} connected successfully.",
     "providerUnavailable": "Provider unavailable.",
     "verified": "Verified",

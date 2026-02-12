@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { loginAccount, registerAccount } from "@/lib/api";
+import { ApiError, loginAccount, registerAccount } from "@/lib/api";
 import { useLanguage } from "@/app/components/LanguageProvider";
 
 type Notice =
@@ -63,7 +63,11 @@ export default function LoginCard() {
       await loginAccount(trimmedEmail, loginPassword);
       window.location.href = "/";
     } catch (error) {
-      console.error("Account auth failed", error);
+      const isExpectedAuthError =
+        error instanceof ApiError && [400, 401, 403, 409, 422].includes(error.status);
+      if (!isExpectedAuthError) {
+        console.error("Account auth failed", error);
+      }
       const fallbackKey = isRegister
         ? "loginCard.errors.registerFailed"
         : "loginCard.errors.invalidCredentials";

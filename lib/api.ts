@@ -9,6 +9,16 @@ type ProviderLoginOptions = {
   clientId?: string;
 };
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message || `Request failed with status ${status}`);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 export type AuthUser = {
   user_id: number;
   email: string | null;
@@ -30,24 +40,38 @@ function buildUrl(path: string) {
   return `${API_BASE_URL.replace(/\/$/, "")}${path}`;
 }
 
+async function readErrorMessage(response: Response): Promise<string> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const payload = (await response.json()) as { detail?: string; message?: string };
+    return payload.detail ?? payload.message ?? "";
+  }
+  return response.text();
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const contentType = response.headers.get("content-type") ?? "";
-    let message = "";
-    if (contentType.includes("application/json")) {
-      const payload = (await response.json()) as { detail?: string; message?: string };
-      message = payload.detail ?? payload.message ?? "";
-    } else {
-      message = await response.text();
-    }
-    throw new Error(message || `Request failed with status ${response.status}`);
+    const message = await readErrorMessage(response);
+    throw new ApiError(message, response.status);
   }
   return (await response.json()) as T;
 }
 
-export async function fetchRecap(userId: number = DEFAULT_USER_ID): Promise<UserStats> {
+export async function fetchRecap(userId: number = DEFAULT_USER_ID): Promise<UserStats | null> {
   const response = await fetch(buildUrl(`/recap?user_id=${userId}`), { cache: "no-store" });
-  const payload = await handleResponse<Record<string, any>>(response);
+  if (!response.ok) {
+    const message = await readErrorMessage(response);
+    const normalized = message.toLowerCase();
+    if (
+      response.status === 404 ||
+      response.status === 400 ||
+      normalized.includes("no stats available")
+    ) {
+      return null;
+    }
+    throw new ApiError(message, response.status);
+  }
+  const payload = (await response.json()) as Record<string, any>;
   return {
     year: payload.year ?? new Date().getFullYear(),
     topGame: payload.top_game ?? null,
@@ -132,11 +156,14 @@ export async function logoutAccount() {
   return handleResponse(response);
 }
 
-export async function fetchCurrentUser() {
+export async function fetchCurrentUser(): Promise<AuthUser | null> {
   const response = await fetch(buildUrl("/auth/me"), {
     credentials: "include",
     cache: "no-store",
   });
+  if (response.status === 401 || response.status === 403) {
+    return null;
+  }
   return handleResponse<AuthUser>(response);
 }
 

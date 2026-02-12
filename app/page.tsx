@@ -17,6 +17,7 @@ export default function RootPage() {
   const [isBooting, setIsBooting] = useState(true);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
+  const [isOnboarded, setIsOnboarded] = useState(false);
   const [lastRecap, setLastRecap] = useState<UserStats | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function RootPage() {
     const key = getOnboardingKey(user.user_id);
     const stored = localStorage.getItem(key);
     const onboarded = stored === "true";
+    setIsOnboarded(onboarded);
     setScreen(onboarded ? "home" : "generate");
   }, [user]);
 
@@ -83,6 +85,7 @@ export default function RootPage() {
     if (user) {
       localStorage.setItem(getOnboardingKey(user.user_id), "true");
     }
+    setIsOnboarded(true);
     setLastRecap(stats ?? lastRecap);
     setScreen("home");
   };
@@ -117,9 +120,11 @@ export default function RootPage() {
       <GenerateWrapPage
         onFlowComplete={handleFlowComplete}
         onRecapUpdate={handleRecapUpdate}
+        onNavigateHome={() => setScreen("home")}
+        canNavigateHome={isOnboarded}
       />
     );
   }
 
-  return <HomePage stats={lastRecap} onGenerate={handleGenerate} />;
+  return <HomePage stats={lastRecap} onGenerate={handleGenerate} user={user} />;
 }

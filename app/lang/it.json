@@ -73,6 +73,7 @@
     "back": "Indietro"
   },
   "accessPage": {
+    "title": "Genera il tuo wrap",
     "statusConnected": "{{provider}} collegato correttamente.",
     "providerUnavailable": "Provider non disponibile.",
     "verified": "Verificato",
